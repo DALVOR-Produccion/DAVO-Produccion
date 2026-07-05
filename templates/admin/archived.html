@@ -1,0 +1,93 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<style>
+
+.tabla-admin {
+
+    border-collapse: collapse;
+    width: 100%;
+
+}
+
+.tabla-admin th {
+
+    background: #6c757d;
+    color: white;
+    padding: 8px;
+
+}
+
+.tabla-admin td {
+
+    border: 1px solid #ccc;
+    padding: 8px;
+
+}
+
+</style>
+
+<div class="card">
+
+    <h2>Registros archivados</h2>
+
+    <hr>
+
+    <table class="tabla-admin">
+
+        <tr>
+
+            <th>Alumno</th>
+            <th>RUT</th>
+            <th>Curso</th>
+            <th>Fecha</th>
+            <th>Área principal</th>
+            <th>Acción</th>
+
+        </tr>
+
+        {% for r in results %}
+
+        <tr>
+
+            <td>{{ r.student_name }}</td>
+
+            <td>{{ r.student_rut }}</td>
+
+            <td>{{ r.course }}</td>
+
+            <td>{{ r.created_at.strftime('%d-%m-%Y') }}</td>
+
+            <td>{{ r.main_area }}</td>
+
+            <td>
+
+                <a href="{{ url_for('admin.restore_student', result_id=r.id) }}"
+                   style="color:green; font-weight:bold;"
+                   onclick="return confirm('¿Restaurar este registro?');">
+
+                    Restaurar
+
+                </a>
+
+            </td>
+
+        </tr>
+
+        {% endfor %}
+
+    </table>
+
+    <hr>
+
+    <a href="{{ url_for('admin.students') }}"
+       class="btn">
+
+        Volver
+
+    </a>
+
+</div>
+
+{% endblock %}

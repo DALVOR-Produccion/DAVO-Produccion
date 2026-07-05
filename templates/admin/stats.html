@@ -1,0 +1,527 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<style>
+.grafico-barra {
+    background: #e9ecef;
+    border-radius: 5px;
+    margin-bottom: 10px;
+    overflow: hidden;
+}
+
+.grafico-relleno {
+    background: #0d6efd;
+    color: white;
+    padding: 8px;
+    font-weight: bold;
+}
+
+.tabla-estilo {
+    border-collapse: collapse;
+    width: 100%;
+}
+
+.tabla-estilo th {
+    background: #0d6efd;
+    color: white;
+    padding: 8px;
+}
+
+.tabla-estilo td {
+    border: 1px solid #ccc;
+    padding: 8px;
+    text-align: center;
+}
+
+.filtro-box {
+    background:#f5f5f5;
+    padding:15px;
+    border-radius:8px;
+    margin-bottom:20px;
+}
+
+.resumen-grid {
+    display:grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap:12px;
+}
+
+.resumen-card {
+    background:#f8f9fa;
+    border:1px solid #ddd;
+    border-radius:8px;
+    padding:12px;
+    text-align:center;
+}
+
+.resumen-numero {
+    font-size:24px;
+    color:#0d6efd;
+    font-weight:bold;
+}
+</style>
+
+<div class="card">
+
+    <h2>Estadísticas Institucionales - Super Administrador</h2>
+
+    <p><strong>Sistema Integral de Orientación Educacional</strong></p>
+
+    <hr>
+
+    <div class="filtro-box">
+
+        <h3>Filtros avanzados</h3>
+
+        <form method="GET" action="{{ url_for('admin.stats') }}">
+
+            <div style="display:flex; flex-wrap:wrap; gap:10px; align-items:end;">
+
+                <div>
+                    <label><strong>Colegio</strong></label><br>
+                    <select name="school" style="padding:8px; min-width:240px;">
+                        <option value="">Todos los colegios</option>
+
+                        {% for colegio in colegios %}
+                            <option value="{{ colegio }}"
+                                {% if selected_school == colegio %}selected{% endif %}>
+                                {{ colegio }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div>
+                    <label><strong>Nivel</strong></label><br>
+                    <select name="level" style="padding:8px;">
+                        <option value="">Todos</option>
+                        <option value="basica" {% if selected_level == "basica" %}selected{% endif %}>
+                            Enseñanza Básica
+                        </option>
+                        <option value="media" {% if selected_level == "media" %}selected{% endif %}>
+                            Enseñanza Media
+                        </option>
+                    </select>
+                </div>
+
+                <div>
+                    <label><strong>Curso</strong></label><br>
+                    <select name="course" style="padding:8px;">
+                        <option value="">Todos</option>
+
+                        {% for c in courses %}
+                            <option value="{{ c }}"
+                                {% if selected_course == c %}selected{% endif %}>
+                                {{ c }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div>
+                    <label><strong>Paralelo</strong></label><br>
+                    <select name="section" style="padding:8px;">
+                        <option value="">Todos</option>
+
+                        {% for s in sections %}
+                            <option value="{{ s }}"
+                                {% if selected_section == s %}selected{% endif %}>
+                                {{ s }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div>
+                    <label><strong>Área</strong></label><br>
+                    <select name="area" style="padding:8px;">
+                        <option value="">Todas</option>
+
+                        {% for a in areas %}
+                            <option value="{{ a }}"
+                                {% if selected_area == a %}selected{% endif %}>
+                                {{ a }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div>
+                    <button type="submit" class="btn">
+                        Aplicar filtros
+                    </button>
+
+                    <a href="{{ url_for('admin.stats') }}"
+                       class="btn"
+                       style="background:#6c757d;">
+                        Limpiar
+                    </a>
+                </div>
+
+            </div>
+
+        </form>
+
+        <p style="margin-top:12px;">
+            <strong>Vista actual:</strong>
+
+            {% if selected_school %}
+                {{ selected_school }}
+            {% else %}
+                todos los colegios
+            {% endif %}
+
+            {% if selected_level %}
+                |
+                {% if selected_level == "basica" %}
+                    Enseñanza Básica
+                {% elif selected_level == "media" %}
+                    Enseñanza Media
+                {% endif %}
+            {% endif %}
+
+            {% if selected_course %}
+                | {{ selected_course }}
+            {% endif %}
+
+            {% if selected_section %}
+                | Paralelo {{ selected_section }}
+            {% endif %}
+
+            {% if selected_area %}
+                | Área {{ selected_area }}
+            {% endif %}
+        </p>
+
+    </div>
+
+    <hr>
+
+    <h3>Resumen general</h3>
+
+    <div class="resumen-grid">
+
+        <div class="resumen-card">
+            <div>Total registros</div>
+            <div class="resumen-numero">{{ total_registros }}</div>
+        </div>
+
+        <div class="resumen-card">
+            <div>Enseñanza Básica</div>
+            <div class="resumen-numero">{{ por_nivel["basica"] }}</div>
+        </div>
+
+        <div class="resumen-card">
+            <div>Enseñanza Media</div>
+            <div class="resumen-numero">{{ por_nivel["media"] }}</div>
+        </div>
+
+        <div class="resumen-card">
+            <div>Área predominante</div>
+            <div style="font-size:18px; color:#0d6efd; font-weight:bold;">
+                {{ area_predominante }}
+            </div>
+        </div>
+
+        <div class="resumen-card">
+            <div>Ruta predominante</div>
+            <div style="font-size:18px; color:#0d6efd; font-weight:bold;">
+                {{ ruta_predominante }}
+            </div>
+        </div>
+
+    </div>
+
+    <hr>
+
+    <h3>Áreas vocacionales predominantes</h3>
+
+    {% if porcentaje_area %}
+
+        {% for area, porcentaje in porcentaje_area.items() %}
+
+            <p><strong>{{ area }}</strong></p>
+
+            <div class="grafico-barra">
+                <div class="grafico-relleno" style="width:{{ porcentaje }}%;">
+                    {{ porcentaje }}%
+                </div>
+            </div>
+
+        {% endfor %}
+
+    {% else %}
+
+        <p>No existen registros activos para mostrar estadísticas.</p>
+
+    {% endif %}
+
+    <hr>
+
+    {% if not selected_school %}
+
+        <h3>Comparación general por colegio</h3>
+
+        <p>
+            Esta tabla permite comparar tendencias entre establecimientos.
+        </p>
+
+        <div style="width:100%; overflow-x:auto;">
+
+            <table class="tabla-estilo">
+
+                <tr>
+                    <th>Colegio</th>
+                    <th>Total</th>
+                    <th>Científica</th>
+                    <th>Humanista</th>
+                    <th>Artística</th>
+                    <th>Técnica</th>
+                    <th>Social</th>
+                </tr>
+
+                {% for colegio, datos in porcentaje_por_colegio.items() %}
+
+                <tr>
+                    <td><strong>{{ colegio }}</strong></td>
+                    <td>{{ datos["total"] }}</td>
+
+                    <td>
+                        {{ datos["areas"]["Científica"]["cantidad"] }}
+                        <br>
+                        <small>{{ datos["areas"]["Científica"]["porcentaje"] }}%</small>
+                    </td>
+
+                    <td>
+                        {{ datos["areas"]["Humanista"]["cantidad"] }}
+                        <br>
+                        <small>{{ datos["areas"]["Humanista"]["porcentaje"] }}%</small>
+                    </td>
+
+                    <td>
+                        {{ datos["areas"]["Artística"]["cantidad"] }}
+                        <br>
+                        <small>{{ datos["areas"]["Artística"]["porcentaje"] }}%</small>
+                    </td>
+
+                    <td>
+                        {{ datos["areas"]["Técnica"]["cantidad"] }}
+                        <br>
+                        <small>{{ datos["areas"]["Técnica"]["porcentaje"] }}%</small>
+                    </td>
+
+                    <td>
+                        {{ datos["areas"]["Social"]["cantidad"] }}
+                        <br>
+                        <small>{{ datos["areas"]["Social"]["porcentaje"] }}%</small>
+                    </td>
+                </tr>
+
+                {% endfor %}
+
+            </table>
+
+        </div>
+
+        <hr>
+
+    {% endif %}
+
+    <h3>Distribución por curso y paralelo</h3>
+
+    <p>
+        Permite comparar cursos y paralelos, por ejemplo 6° Básico A,
+        6° Básico B, 8° Básico A o 4° Medio B.
+    </p>
+
+    <div style="width:100%; overflow-x:auto;">
+
+        <table class="tabla-estilo">
+
+            <tr>
+                <th>Curso / Paralelo</th>
+                <th>Total</th>
+                <th>Científica</th>
+                <th>Humanista</th>
+                <th>Artística</th>
+                <th>Técnica</th>
+                <th>Social</th>
+            </tr>
+
+            {% for curso_paralelo, datos in porcentaje_por_curso_paralelo.items() %}
+
+            <tr>
+                <td><strong>{{ curso_paralelo }}</strong></td>
+                <td>{{ por_curso_paralelo[curso_paralelo]["total"] }}</td>
+
+                <td>
+                    {{ datos["Científica"]["cantidad"] }}
+                    <br>
+                    <small>{{ datos["Científica"]["porcentaje"] }}%</small>
+                </td>
+
+                <td>
+                    {{ datos["Humanista"]["cantidad"] }}
+                    <br>
+                    <small>{{ datos["Humanista"]["porcentaje"] }}%</small>
+                </td>
+
+                <td>
+                    {{ datos["Artística"]["cantidad"] }}
+                    <br>
+                    <small>{{ datos["Artística"]["porcentaje"] }}%</small>
+                </td>
+
+                <td>
+                    {{ datos["Técnica"]["cantidad"] }}
+                    <br>
+                    <small>{{ datos["Técnica"]["porcentaje"] }}%</small>
+                </td>
+
+                <td>
+                    {{ datos["Social"]["cantidad"] }}
+                    <br>
+                    <small>{{ datos["Social"]["porcentaje"] }}%</small>
+                </td>
+            </tr>
+
+            {% endfor %}
+
+        </table>
+
+    </div>
+
+    <hr>
+
+    <h3>Registros por curso general</h3>
+
+    <table class="tabla-estilo">
+
+        <tr>
+            <th>Curso</th>
+            <th>Cantidad</th>
+        </tr>
+
+        {% for curso, cantidad in por_curso.items() %}
+
+        <tr>
+            <td>{{ curso }}</td>
+            <td>{{ cantidad }}</td>
+        </tr>
+
+        {% endfor %}
+
+    </table>
+
+    <hr>
+
+    <h3>Rutas sugeridas</h3>
+
+    <table class="tabla-estilo">
+
+        <tr>
+            <th>Ruta</th>
+            <th>Cantidad</th>
+        </tr>
+
+        {% for ruta, cantidad in por_ruta.items() %}
+
+        <tr>
+            <td>{{ ruta }}</td>
+            <td>{{ cantidad }}</td>
+        </tr>
+
+        {% endfor %}
+
+    </table>
+
+    <hr>
+
+    <h3>Tipo de enseñanza</h3>
+
+    <table class="tabla-estilo">
+
+        <tr>
+            <th>Tipo</th>
+            <th>Cantidad</th>
+        </tr>
+
+        {% for ensenanza, cantidad in por_ensenanza.items() %}
+
+        <tr>
+            <td>{{ ensenanza }}</td>
+            <td>{{ cantidad }}</td>
+        </tr>
+
+        {% endfor %}
+
+    </table>
+
+    <hr>
+
+    <h3>Recomendaciones institucionales</h3>
+
+    {% if recomendaciones %}
+
+        <ul>
+            {% for r in recomendaciones %}
+                <li style="margin-bottom:10px;">{{ r }}</li>
+            {% endfor %}
+        </ul>
+
+    {% else %}
+
+        <p>No existen suficientes datos para recomendaciones automáticas.</p>
+
+    {% endif %}
+
+    <hr>
+
+    <div style="background:#f5f5f5; padding:15px; border-radius:8px;">
+
+        <h3>Interpretación institucional</h3>
+
+        <p>
+            Estas estadísticas permiten planificar talleres, comparar paralelos,
+            diferenciar educación básica y media, detectar áreas predominantes
+            y apoyar decisiones relevantes, especialmente en 8° básico y 4° medio.
+        </p>
+
+    </div>
+
+    <hr>
+
+    <div style="text-align:center; margin-top:20px;">
+
+        <button onclick="window.print()" class="btn">
+            Imprimir estadísticas
+        </button>
+
+        <a href="{{ url_for(
+            'admin.institutional_report',
+            school=selected_school,
+            level=selected_level,
+            course=selected_course,
+            section=selected_section,
+            area=selected_area
+        ) }}" class="btn">
+            Descargar PDF con filtros actuales
+        </a>
+
+        <a href="{{ url_for(
+            'admin.export_excel',
+            school=selected_school
+        ) }}" class="btn">
+            Exportar Excel
+        </a>
+
+        <a href="{{ url_for('admin.dashboard') }}" class="btn">
+            Volver
+        </a>
+
+    </div>
+
+</div>
+
+{% endblock %}

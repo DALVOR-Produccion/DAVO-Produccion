@@ -1,0 +1,98 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<style>
+
+.tabla-colegio {
+
+    width: 100%;
+    border-collapse: collapse;
+
+}
+
+.tabla-colegio th {
+
+    background: #0d6efd;
+    color: white;
+    padding: 8px;
+
+}
+
+.tabla-colegio td {
+
+    border: 1px solid #ccc;
+    padding: 8px;
+
+}
+
+</style>
+
+<div class="card">
+
+    <h2>Alumnos registrados</h2>
+
+    <p>
+        <strong>Establecimiento:</strong> {{ school_name }}
+    </p>
+
+    <hr>
+
+    <div style="width:100%; overflow-x:auto;">
+
+        <table class="tabla-colegio">
+
+            <tr>
+
+                <th>Alumno</th>
+                <th>RUT</th>
+                <th>Curso</th>
+                <th>Fecha</th>
+                <th>Área principal</th>
+                <th>Ruta sugerida</th>
+
+            </tr>
+
+            {% for r in results %}
+
+            <tr>
+
+                <td>{{ r.student_name }}</td>
+
+                <td>{{ r.student_rut }}</td>
+
+                <td>{{ r.course }}</td>
+
+                <td>{{ r.created_at.strftime('%d-%m-%Y') }}</td>
+
+                <td>{{ r.main_area }}</td>
+
+                <td>{{ r.suggested_path }}</td>
+
+            </tr>
+
+            {% endfor %}
+
+        </table>
+
+    </div>
+
+    <hr>
+
+    <a href="{{ url_for('colegio.dashboard') }}"
+       class="btn">
+
+        Volver
+
+    </a>
+
+    <a href="{{ url_for('colegio.logout') }}"
+       class="btn btn-secondary">
+
+        Salir
+
+    </a>
+
+</div>
+
+{% endblock %}

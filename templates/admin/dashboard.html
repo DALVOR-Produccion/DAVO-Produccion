@@ -1,0 +1,231 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<style>
+.admin-link {
+    color: #0d6efd;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+.admin-link:hover {
+    color: #084298;
+}
+
+.estado-msg {
+    margin-left:10px;
+    color:green;
+    font-weight:bold;
+}
+
+.info-box {
+    background:#f5f5f5;
+    padding:12px;
+    border-radius:8px;
+    margin-bottom:10px;
+}
+</style>
+
+<div class="card">
+
+    <h2>Panel Administrador</h2>
+
+    <p>
+        <strong>Sistema Integral de Orientación Educacional</strong>
+    </p>
+
+    <hr>
+
+    <h3>Información general</h3>
+
+    <div class="info-box">
+
+        <p>
+            <strong>Registros activos:</strong>
+            <span style="color:green; font-size:20px;">
+                {{ activos }}
+            </span>
+        </p>
+
+        <p>
+            <strong>Registros archivados:</strong>
+            <span style="color:#dc3545; font-size:20px;">
+                {{ archivados }}
+            </span>
+        </p>
+
+        <p>
+            <strong>Total histórico:</strong>
+            <span style="color:#0d6efd; font-size:20px;">
+                {{ total_registros }}
+            </span>
+        </p>
+
+    </div>
+
+    <hr>
+
+    <h3>Gestión</h3>
+
+    <ul>
+
+        <li>
+            <a class="admin-link"
+               href="{{ url_for('admin.students') }}">
+
+               Ver alumnos activos
+
+            </a>
+        </li>
+
+        <li>
+            <a class="admin-link"
+               href="{{ url_for('admin.archived_students') }}">
+
+               Ver registros archivados
+
+            </a>
+        </li>
+
+        <li>
+            <a class="admin-link"
+               href="{{ url_for('admin.stats') }}">
+
+               Estadísticas institucionales
+
+            </a>
+        </li>
+
+        <li>
+            <a class="admin-link"
+               href="{{ url_for('talleres.index') }}">
+
+               Talleres sugeridos
+
+            </a>
+        </li>
+        <li>
+
+            <a class="admin-link"
+            href="{{ url_for('historial.index') }}">
+
+            Seguimiento Histórico DAVO
+
+            </a>
+
+        </li>
+
+        <li>
+
+            <a class="admin-link"
+               href="{{ url_for('admin.institutional_users') }}">
+
+                Usuarios institucionales
+
+            </a>
+
+        </li>
+
+        <li>
+
+            <a class="admin-link"
+               href="#"
+               onclick="exportarExcel(); return false;">
+
+               Exportar Excel
+
+            </a>
+
+            <span id="estadoExportacion" class="estado-msg"></span>
+
+        </li>
+
+        <li>
+
+            <a class="admin-link"
+               href="#"
+               onclick="descargarInforme(); return false;">
+
+               Descargar Informe Institucional PDF
+
+            </a>
+
+            <span id="estadoInforme" class="estado-msg"></span>
+
+        </li>
+
+        <li>
+
+            <a class="admin-link"
+               href="#"
+               onclick="respaldarBase(); return false;">
+
+               Respaldar Base de Datos
+
+            </a>
+
+            <span id="estadoRespaldo" class="estado-msg"></span>
+
+        </li>
+
+    </ul>
+
+    <hr>
+
+    <a href="{{ url_for('admin.logout') }}" class="btn">
+        Cerrar sesión
+    </a>
+
+</div>
+
+<script>
+
+function exportarExcel() {
+
+    const estado = document.getElementById("estadoExportacion");
+
+    estado.innerHTML = "... iniciando descarga";
+
+    window.location.href = "{{ url_for('admin.export_excel') }}";
+
+    setTimeout(function() {
+
+        estado.innerHTML = "✔ descarga finalizada";
+
+    }, 2000);
+}
+
+function descargarInforme() {
+
+    const estado = document.getElementById("estadoInforme");
+
+    estado.innerHTML = "... generando informe";
+
+    window.location.href = "{{ url_for('admin.institutional_report') }}";
+
+    setTimeout(function() {
+
+        estado.innerHTML = "✔ informe descargado";
+
+    }, 2500);
+}
+
+function respaldarBase() {
+
+    const estado = document.getElementById("estadoRespaldo");
+
+    estado.innerHTML = "... preparando respaldo";
+
+    window.location.href = "{{ url_for('admin.backup_database') }}";
+
+    setTimeout(function() {
+
+        estado.innerHTML = "✔ respaldo descargado";
+
+    }, 2000);
+}
+
+</script>
+
+{% endblock %}

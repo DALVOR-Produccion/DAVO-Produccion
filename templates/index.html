@@ -1,0 +1,101 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<div class="card">
+
+    <h2 style="text-align:center;">
+        Sistema Integral de Orientación Educacional
+    </h2>
+
+    <hr>
+
+    <div style="display:flex; gap:20px;">
+
+        <!-- LADO IZQUIERDO -->
+        <div style="flex:1;">
+
+            <h3>Acceso al sistema</h3>
+
+            <p>
+                Esta plataforma permite realizar una evaluación vocacional inicial
+                y obtener un informe de orientación, considerando el nivel educativo
+                del estudiante.
+            </p>
+
+            <p>
+                La evaluación es gratuita y forma parte de una etapa inicial de diagnóstico.
+            </p>
+
+            <div style="text-align:center; margin-top:25px;">
+
+                <a href="{{ url_for('students.new_student') }}"
+                   class="btn"
+                   style="margin-right:15px;">
+
+                    Iniciar Test Básico
+
+                </a>
+
+                <a href="{{ url_for('home') }}"
+                   class="btn"
+                   style="background-color:#6c757d;">
+
+                    Salir
+
+                </a>
+
+            </div>
+
+        </div>
+
+        <!-- LADO DERECHO -->
+        <div style="flex:1;
+                    background:#f5f5f5;
+                    padding:15px;
+                    border-radius:8px;">
+
+            <h3>
+                ¿Qué es el sistema?
+            </h3>
+
+            <p>
+                El Sistema Integral de Orientación Educacional permite acompañar
+                el desarrollo vocacional de los estudiantes desde 6° básico hasta
+                4° medio, entregando información progresiva y apoyo en la toma
+                de decisiones educativas.
+            </p>
+
+            <p>
+                Incluye seguimiento en enseñanza básica y continuidad en enseñanza
+                media, tanto en modalidad Científico-Humanista como Técnico Profesional.
+            </p>
+
+            <p>
+                Esta versión corresponde a una evaluación inicial. Para acceso
+                institucional, seguimiento completo e informes avanzados,
+                contacte al administrador.
+            </p>
+
+            <p style="margin-top:20px;">
+
+                <strong>
+                    Desarrollado por David Vargas Orellana
+                </strong>
+
+            </p>
+            <p style="margin-top:15px; line-height:1.6;">
+
+                <strong>Contacto:</strong><br>
+
+                sistema.orientacion.edu@gmail.com
+
+            </p>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

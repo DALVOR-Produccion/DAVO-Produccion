@@ -1,0 +1,135 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="card">
+    <h2>Test Vocacional - 3° Medio</h2>
+
+    <form method="POST">
+
+        <h3>Datos de contexto</h3>
+
+        <div class="form-group">
+            <label>Tipo de enseñanza</label>
+            <select name="education_type" id="education_type" required>
+                <option value="">Seleccione</option>
+                {% for t in education_types %}
+                    <option value="{{ t }}">{{ t }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>Área TP</label>
+            <select name="tp_area" id="tp_area">
+                <option value="">No aplica</option>
+                {% for t in tp_areas %}
+                    <option value="{{ t }}">{{ t }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>Especialidad Técnico Profesional</label>
+            <select name="specialty" id="specialty">
+                <option value="">Seleccione</option>
+                <option>Electricidad</option>
+                <option>Mecánica Automotriz</option>
+                <option>Programación</option>
+                <option>Conectividad y Redes</option>
+                <option>Administración</option>
+                <option>Contabilidad</option>
+                <option>Gastronomía</option>
+                <option>Construcción</option>
+                <option>Agropecuaria</option>
+                <option>Atención de Enfermería</option>
+                <option>Otro</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>Área de electivos (Científico-Humanista)</label>
+            <select name="elective" id="elective">
+                <option value="">Seleccione</option>
+                <option>No aplica</option>
+                <option>Ciencias</option>
+                <option>Humanidades</option>
+                <option>Matemática</option>
+                <option>Artes</option>
+                <option>Lengua y Literatura</option>
+                <option>Educación Física</option>
+                <option>Mixto</option>
+                <option>No sabe</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>Nivel de motivación</label>
+            <select name="motivation" required>
+                <option value="">Seleccione</option>
+                {% for m in motivation_levels %}
+                    <option value="{{ m }}">{{ m }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <hr>
+
+        <h3>Preguntas del test</h3>
+
+        {% for q_id, question, area in questions %}
+            <div class="form-group">
+                <label>{{ q_id }}. {{ question }}</label>
+                <div>
+                    <label><input type="radio" name="q_{{ q_id }}" value="si" required> Sí</label>
+                    <label><input type="radio" name="q_{{ q_id }}" value="no"> No</label>
+                </div>
+            </div>
+        {% endfor %}
+
+        <div style="text-align:center; margin-top:20px;">
+            <button type="submit" class="btn">Finalizar Test</button>
+        </div>
+
+    </form>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const educationType = document.getElementById("education_type");
+    const tpArea = document.getElementById("tp_area");
+    const specialty = document.getElementById("specialty");
+    const elective = document.getElementById("elective");
+
+    function updateFields() {
+        if (educationType.value === "Técnico Profesional") {
+            tpArea.disabled = false;
+            specialty.disabled = false;
+
+            elective.disabled = true;
+            elective.value = "";
+
+        } else if (educationType.value === "Científico-Humanista") {
+            tpArea.disabled = true;
+            specialty.disabled = true;
+
+            elective.disabled = false;
+
+            tpArea.value = "";
+            specialty.value = "";
+
+        } else {
+            tpArea.disabled = true;
+            specialty.disabled = true;
+            elective.disabled = true;
+
+            tpArea.value = "";
+            specialty.value = "";
+            elective.value = "";
+        }
+    }
+
+    educationType.addEventListener("change", updateFields);
+    updateFields();
+});
+</script>
+{% endblock %}

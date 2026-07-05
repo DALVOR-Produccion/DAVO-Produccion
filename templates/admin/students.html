@@ -1,0 +1,234 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<style>
+.tabla-admin {
+    border-collapse: collapse;
+    width: 100%;
+}
+
+.tabla-admin th {
+    background: #0d6efd;
+    color: white;
+    padding: 8px;
+}
+
+.tabla-admin td {
+    border: 1px solid #ccc;
+    padding: 8px;
+}
+
+.link-admin {
+    text-decoration: none;
+    font-weight: bold;
+    color: #0d6efd;
+}
+
+.link-admin:hover {
+    color: #084298;
+}
+
+.paginacion {
+    margin-top: 20px;
+    text-align: center;
+}
+
+.paginacion a,
+.paginacion span {
+    display: inline-block;
+    padding: 8px 12px;
+    margin: 3px;
+    border: 1px solid #ccc;
+    text-decoration: none;
+    border-radius: 4px;
+}
+
+.paginacion .actual {
+    background: #0d6efd;
+    color: white;
+    font-weight: bold;
+}
+</style>
+
+<div class="card">
+
+    <h2>Alumnos registrados activos</h2>
+
+    <hr>
+
+    <form method="GET">
+
+        <div style="margin-bottom:15px;">
+
+            <input type="text"
+                   name="search"
+                   placeholder="Buscar por nombre, RUT o colegio..."
+                   value="{{ search }}"
+                   style="padding:8px; width:320px;">
+
+            <select name="course" style="padding:8px;">
+                <option value="">Todos los cursos</option>
+
+                {% for c in courses %}
+                    <option value="{{ c }}"
+                        {% if selected_course == c %}selected{% endif %}>
+                        {{ c }}
+                    </option>
+                {% endfor %}
+            </select>
+
+            <button type="submit" class="btn">
+                Buscar
+            </button>
+
+            <a href="{{ url_for('admin.students') }}"
+               class="btn"
+               style="background:#6c757d;">
+                Limpiar
+            </a>
+
+        </div>
+
+    </form>
+
+    <hr>
+
+    <div style="margin-bottom:15px;">
+        <a href="{{ url_for('admin.archived_students') }}"
+           class="link-admin">
+            Ver registros archivados
+        </a>
+    </div>
+
+    {% if pagination %}
+
+        <p>
+            Mostrando página
+            <strong>{{ pagination.page }}</strong>
+            de
+            <strong>{{ pagination.pages }}</strong>
+            |
+            Total registros encontrados:
+            <strong>{{ pagination.total }}</strong>
+        </p>
+
+    {% endif %}
+
+    <div style="width:100%; overflow-x:auto;">
+
+    <table class="tabla-admin">
+
+        <tr>
+            <th>Alumno</th>
+            <th>RUT</th>
+            <th>Colegio</th>
+            <th>Curso</th>
+            <th>Fecha</th>
+            <th>Área principal</th>
+            <th>Ruta sugerida</th>
+            <th>Duplicado</th>
+            <th>Acción</th>
+        </tr>
+
+        {% for r in results %}
+
+        <tr>
+            <td>{{ r.student_name }}</td>
+            <td>{{ r.student_rut }}</td>
+            <td>{{ r.school }}</td>
+            <td>
+                {{ r.course }}
+                {% if r.section and r.section != "SIN PARALELO" %}
+                    {{ r.section }}
+                {% endif %}
+            </td>
+            <td>{{ r.created_at.strftime('%d-%m-%Y') }}</td>
+            <td>{{ r.main_area }}</td>
+            <td>{{ r.suggested_path }}</td>
+
+            <td>
+                {% if r.posible_duplicado %}
+                    <span style="color:red; font-weight:bold;">
+                        Posible duplicado
+                    </span>
+                {% else %}
+                    -
+                {% endif %}
+            </td>
+
+            <td>
+                <a href="{{ url_for('admin.archive_student', result_id=r.id) }}"
+                   style="color:red; font-weight:bold;"
+                   onclick="return confirm('¿Archivar este registro?');">
+                    Archivar
+                </a>
+
+                <br><br>
+
+                <a href="{{ url_for('admin.edit_student', result_id=r.id) }}"
+                   style="color:#0d6efd; font-weight:bold;">
+                    Editar datos
+                </a>
+
+                <br><br>
+
+                <a href="{{ url_for('admin.edit_history', result_id=r.id) }}"
+                   style="color:#198754; font-weight:bold;">
+                    Administrar historial
+                </a>
+            </td>
+        </tr>
+
+        {% endfor %}
+
+    </table>
+    </div>
+    {% if pagination and pagination.pages > 1 %}
+
+    <div class="paginacion">
+
+        {% if pagination.has_prev %}
+            <a href="{{ url_for('admin.students', page=pagination.prev_num, search=search, course=selected_course) }}">
+                Anterior
+            </a>
+        {% endif %}
+
+        {% for page_num in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+
+            {% if page_num %}
+
+                {% if page_num == pagination.page %}
+                    <span class="actual">{{ page_num }}</span>
+                {% else %}
+                    <a href="{{ url_for('admin.students', page=page_num, search=search, course=selected_course) }}">
+                        {{ page_num }}
+                    </a>
+                {% endif %}
+
+            {% else %}
+                <span>...</span>
+            {% endif %}
+
+        {% endfor %}
+
+        {% if pagination.has_next %}
+            <a href="{{ url_for('admin.students', page=pagination.next_num, search=search, course=selected_course) }}">
+                Siguiente
+            </a>
+        {% endif %}
+
+    </div>
+
+    {% endif %}
+
+    <hr>
+
+    <a href="{{ url_for('admin.dashboard') }}"
+       class="btn">
+        Volver
+    </a>
+
+</div>
+
+{% endblock %}

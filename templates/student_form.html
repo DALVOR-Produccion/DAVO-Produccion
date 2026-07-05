@@ -1,0 +1,234 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<div class="card">
+
+    <h2>Registro de Alumno</h2>
+
+    <form method="POST" autocomplete="off">
+
+        <div class="form-group">
+            <label for="student_rut">RUT del Alumno</label>
+            <input type="text" id="student_rut" name="student_rut" required autocomplete="off">
+            <small>Ejemplo: 11111111-1</small>
+        </div>
+
+        <div class="form-group">
+            <label for="student_name">Nombre completo del Alumno</label>
+            <input type="text" id="student_name" name="student_name" required autocomplete="off">
+        </div>
+
+        <hr>
+
+        <h3>Tipo de ingreso</h3>
+
+        <div class="form-group">
+            <label>
+                <input type="radio" name="student_type" value="colegio" checked onclick="mostrarTipoIngreso()">
+                Alumno perteneciente a un colegio
+            </label>
+
+            <br>
+
+            <label>
+                <input type="radio" name="student_type" value="particular" onclick="mostrarTipoIngreso()">
+                Alumno particular
+            </label>
+        </div>
+
+        <div id="bloqueColegio">
+
+            <div class="form-group">
+                <label for="school_search">Buscar colegio</label>
+
+                <input type="text"
+                       id="school_search"
+                       placeholder="Escriba parte del nombre, comuna o RBD..."
+                       autocomplete="off">
+
+                <input type="hidden" id="school_id" name="school_id">
+                <input type="hidden" id="school" name="school">
+
+                <div id="school_results"
+                     style="border:1px solid #ccc; display:none; background:white; max-height:200px; overflow-y:auto; margin-top:5px;">
+                </div>
+
+                <small>Seleccione el colegio desde la lista de sugerencias.</small>
+            </div>
+
+            <div id="school_selected"
+                 style="background:#f5f5f5; padding:10px; border-radius:8px; display:none; margin-bottom:15px;">
+            </div>
+
+        </div>
+
+        <div id="bloqueParticular" style="display:none;">
+
+            <h3>Datos del Apoderado</h3>
+
+            <div class="form-group">
+                <label for="guardian_rut">RUT del Apoderado</label>
+                <input type="text" id="guardian_rut" name="guardian_rut" autocomplete="off">
+                <small>Ejemplo: 11111111-1</small>
+            </div>
+
+            <div class="form-group">
+                <label for="guardian_name">Nombre completo del Apoderado</label>
+                <input type="text" id="guardian_name" name="guardian_name" autocomplete="off">
+            </div>
+
+            <div class="form-group">
+                <label for="guardian_email">Correo donde recibirá el informe</label>
+                <input type="email" id="guardian_email" name="guardian_email" autocomplete="nope">
+            </div>
+
+        </div>
+
+        <hr>
+
+        <div class="form-group">
+            <label for="course">Curso</label>
+            <select id="course" name="course" required>
+                <option value="">Seleccione un curso</option>
+                {% for course in courses %}
+                    <option value="{{ course }}">{{ course }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="section">Paralelo</label>
+            <select id="section" name="section" required>
+                <option value="SIN PARALELO">SIN PARALELO</option>
+                {% for letra in "ABCDEFGHIJKLMNOPQRSTUVWXYZ" %}
+                    <option value="{{ letra }}">{{ letra }}</option>
+                {% endfor %}
+            </select>
+            <small>Seleccione la letra del curso. Si no corresponde, deje SIN PARALELO.</small>
+        </div>
+
+        <div class="form-group">
+            <label for="student_email">Correo del Colegio</label>
+            <input type="email" id="student_email" name="student_email" autocomplete="nope">
+        </div>
+
+        <hr>
+
+        <div class="form-group">
+            <label for="test_type">Tipo de Test</label>
+            <select id="test_type" name="test_type" required>
+                <option value="">Seleccione tipo de test</option>
+                {% for test in test_types %}
+                    <option value="{{ test }}">{{ test }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <button type="submit" class="btn">Guardar datos</button>
+
+        <a href="{{ url_for('home') }}" class="btn btn-secondary">Volver</a>
+
+    </form>
+
+</div>
+
+<script>
+function mostrarTipoIngreso() {
+
+    const tipo = document.querySelector('input[name="student_type"]:checked').value;
+
+    const bloqueColegio = document.getElementById("bloqueColegio");
+    const bloqueParticular = document.getElementById("bloqueParticular");
+
+    const guardianRut = document.getElementById("guardian_rut");
+    const guardianName = document.getElementById("guardian_name");
+
+    if (tipo === "colegio") {
+        bloqueColegio.style.display = "block";
+        bloqueParticular.style.display = "none";
+
+        guardianRut.removeAttribute("required");
+        guardianName.removeAttribute("required");
+    } else {
+        bloqueColegio.style.display = "none";
+        bloqueParticular.style.display = "block";
+
+        guardianRut.setAttribute("required", "required");
+        guardianName.setAttribute("required", "required");
+
+        document.getElementById("school_id").value = "";
+        document.getElementById("school").value = "ALUMNO PARTICULAR";
+        document.getElementById("school_search").value = "";
+        document.getElementById("school_selected").style.display = "none";
+    }
+}
+
+const schoolSearch = document.getElementById("school_search");
+const schoolResults = document.getElementById("school_results");
+
+schoolSearch.addEventListener("input", function() {
+
+    const texto = this.value.trim();
+
+    document.getElementById("school_id").value = "";
+    document.getElementById("school").value = "";
+
+    if (texto.length < 2) {
+        schoolResults.style.display = "none";
+        schoolResults.innerHTML = "";
+        return;
+    }
+
+    fetch("{{ url_for('students.buscar_colegios') }}?q=" + encodeURIComponent(texto))
+        .then(response => response.json())
+        .then(data => {
+
+            schoolResults.innerHTML = "";
+
+            if (data.length === 0) {
+                schoolResults.innerHTML = "<div style='padding:8px;'>No se encontraron colegios. Si corresponde, marque Alumno particular.</div>";
+                schoolResults.style.display = "block";
+                return;
+            }
+
+            data.forEach(function(colegio) {
+
+                const item = document.createElement("div");
+
+                item.textContent = colegio.label;
+                item.style.padding = "8px";
+                item.style.cursor = "pointer";
+                item.style.borderBottom = "1px solid #eee";
+
+                item.onclick = function() {
+
+                    document.getElementById("school_id").value = colegio.id;
+                    document.getElementById("school").value = colegio.name;
+                    schoolSearch.value = colegio.label;
+
+                    const selected = document.getElementById("school_selected");
+
+                    selected.innerHTML =
+                        "<strong>Colegio seleccionado:</strong><br>" +
+                        colegio.name + "<br>" +
+                        "Comuna: " + colegio.comuna + "<br>" +
+                        "RBD: " + colegio.rbd;
+
+                    selected.style.display = "block";
+
+                    schoolResults.style.display = "none";
+                    schoolResults.innerHTML = "";
+                };
+
+                schoolResults.appendChild(item);
+            });
+
+            schoolResults.style.display = "block";
+        });
+});
+
+mostrarTipoIngreso();
+</script>
+
+{% endblock %}

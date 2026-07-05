@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="card">
+    <h2>Resultado del Test</h2>
+
+    <p><strong>Área principal:</strong> {{ main_area }}</p>
+    <p><strong>Área secundaria:</strong> {{ secondary_area }}</p>
+
+    <hr>
+
+    <button class="btn">Imprimir informe</button>
+    <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">Volver</a>
+</div>
+{% endblock %}

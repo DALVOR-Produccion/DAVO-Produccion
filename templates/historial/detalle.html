@@ -1,0 +1,103 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<div class="card">
+
+    <h2>Ficha Histórica DAVO</h2>
+
+    <h3>Datos actuales del estudiante</h3>
+
+    <p><strong>Alumno:</strong> {{ ultimo.student_name }}</p>
+    <p><strong>RUT:</strong> {{ ultimo.student_rut }}</p>
+    <p><strong>Colegio actual:</strong> {{ ultimo.school }}</p>
+    <p>
+        <strong>Curso actual:</strong>
+        {{ ultimo.course }}
+        {% if ultimo.section and ultimo.section != "SIN PARALELO" %}
+            {{ ultimo.section }}
+        {% endif %}
+    </p>
+
+    <hr>
+
+    <h3>Resumen histórico</h3>
+
+    <p><strong>Evaluaciones registradas:</strong> {{ resultados|length }}</p>
+    <p><strong>Área predominante histórica:</strong> {{ analisis.area_predominante }}</p>
+    <p><strong>Área secundaria predominante:</strong> {{ analisis.area_secundaria_predominante }}</p>
+    <p><strong>Tendencia DAVO:</strong> {{ analisis.tendencia }}</p>
+
+    <div style="background:#f5f5f5; padding:12px; border-radius:8px;">
+        <p>{{ analisis.texto }}</p>
+    </div>
+
+    <hr>
+
+    <h3>Historial de establecimientos</h3>
+
+    <ul>
+        {% for colegio in colegios_historial %}
+            <li>{{ colegio }}</li>
+        {% endfor %}
+    </ul>
+
+    <hr>
+
+    <h3>Línea de tiempo DAVO</h3>
+
+    <div style="width:100%; overflow-x:auto;">
+
+        <table style="width:100%; border-collapse:collapse;">
+
+            <tr style="background:#0d6efd; color:white;">
+                <th style="padding:8px;">Año</th>
+                <th style="padding:8px;">Fecha</th>
+                <th style="padding:8px;">Curso</th>
+                <th style="padding:8px;">Colegio</th>
+                <th style="padding:8px;">Área principal</th>
+                <th style="padding:8px;">Área secundaria</th>
+                <th style="padding:8px;">Ruta sugerida</th>
+            </tr>
+
+            {% for r in resultados %}
+
+            <tr>
+                <td style="border:1px solid #ccc; padding:8px;">
+                    {{ r.created_at.strftime('%Y') if r.created_at else '' }}
+                </td>
+                <td style="border:1px solid #ccc; padding:8px;">
+                    {{ r.created_at.strftime('%d-%m-%Y') if r.created_at else '' }}
+                </td>
+                <td style="border:1px solid #ccc; padding:8px;">
+                    {{ r.course }}
+                    {% if r.section and r.section != "SIN PARALELO" %}
+                        {{ r.section }}
+                    {% endif %}
+                </td>
+                <td style="border:1px solid #ccc; padding:8px;">{{ r.school }}</td>
+                <td style="border:1px solid #ccc; padding:8px;">{{ r.main_area }}</td>
+                <td style="border:1px solid #ccc; padding:8px;">{{ r.secondary_area }}</td>
+                <td style="border:1px solid #ccc; padding:8px;">{{ r.suggested_path or "En observación" }}</td>
+            </tr>
+
+            {% endfor %}
+
+        </table>
+
+    </div>
+
+    <hr>
+
+    <a href="{{ url_for('historial.descargar_pdf_historial', rut=ultimo.student_rut) }}"
+       class="btn">
+        Descargar PDF Histórico DAVO
+    </a>
+
+    <a href="{{ url_for('historial.index') }}" class="btn btn-secondary">
+        Volver al historial
+    </a>
+
+</div>
+
+{% endblock %}

@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="card">
+    <h2>Test Vocacional - 8° Básico</h2>
+
+    <form method="POST">
+        {% for q_id, question, area in questions %}
+            <div class="form-group">
+                <label>{{ q_id }}. {{ question }}</label>
+                <div>
+                    <label><input type="radio" name="q_{{ q_id }}" value="si" required> Sí</label>
+                    <label><input type="radio" name="q_{{ q_id }}" value="no"> No</label>
+                </div>
+            </div>
+        {% endfor %}
+
+        <button type="submit" class="btn">Finalizar Test</button>
+    </form>
+</div>
+{% endblock %}

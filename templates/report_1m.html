@@ -1,0 +1,181 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<div class="card">
+
+    <h2 style="text-align:center;">
+        Informe de Orientación Educacional - 1° Medio
+    </h2>
+
+    <p style="text-align:center;">
+        Sistema Integral de Orientación Educacional
+    </p>
+
+    <hr>
+
+    <h3>Introducción</h3>
+
+    <p>
+        Este informe corresponde a una evaluación de ajuste vocacional aplicada
+        en 1° medio, nivel que marca el inicio de un nuevo ciclo educativo dentro
+        de la Enseñanza Media.
+    </p>
+
+    <p>
+        Su objetivo es identificar los intereses predominantes del estudiante
+        al comenzar esta etapa, considerando la modalidad educativa en la que
+        se encuentra actualmente.
+    </p>
+
+    <p>
+        Los resultados obtenidos no deben entenderse como una definición
+        vocacional definitiva, sino como un primer antecedente para el seguimiento
+        progresivo durante la Enseñanza Media.
+    </p>
+
+    <hr>
+
+    <h3>Datos del estudiante</h3>
+
+    <p><strong>Nombre del alumno:</strong> {{ result.student_name }}</p>
+
+    <p><strong>RUT:</strong> {{ result.student_rut }}</p>
+
+    <p>
+       <strong>Curso:</strong>
+       {{ result.course }}
+       {% if result.section and result.section != "SIN PARALELO" %}
+           {{ result.section }}
+       {% endif %}
+    </p>
+
+    <p><strong>Tipo de Test:</strong> {{ result.test_type }}</p>
+
+    <p><strong>Fecha:</strong> {{ result.created_at.strftime('%d-%m-%Y') }}</p>
+
+    {% if result.education_type %}
+        <p><strong>Modalidad actual:</strong> {{ result.education_type }}</p>
+    {% endif %}
+
+    {% if result.tp_area %}
+        <p><strong>Área Técnico Profesional declarada:</strong> {{ result.tp_area }}</p>
+    {% endif %}
+
+    <hr>
+
+    <h3>Resultados</h3>
+
+    <p><strong>Área principal:</strong> {{ result.main_area }}</p>
+
+    <p><strong>Área secundaria:</strong> {{ result.secondary_area }}</p>
+
+    {% if result.suggested_path %}
+        <p><strong>Ruta sugerida por la evaluación actual:</strong> {{ result.suggested_path }}</p>
+    {% endif %}
+
+    <hr>
+
+    <h3>Interpretación</h3>
+
+    <p>{{ interpretation }}</p>
+
+    {% if context_analysis %}
+
+    <hr>
+
+    <h3>Transición e inicio de Enseñanza Media</h3>
+
+    <p style="white-space: pre-line;">{{ context_analysis }}</p>
+
+    {% endif %}
+
+    {% if follow_up_text %}
+
+    <hr>
+
+    <h3>Inicio del seguimiento de Enseñanza Media</h3>
+
+    <p>{{ follow_up_text }}</p>
+
+    {% endif %}
+
+    <hr>
+
+    <h3>Recomendaciones</h3>
+
+    <p>
+        Se recomienda continuar explorando intereses, habilidades y áreas de
+        aprendizaje durante los próximos años de Enseñanza Media, manteniendo
+        una actitud abierta frente a las distintas oportunidades formativas que
+        se presentarán progresivamente.
+    </p>
+
+    <p>
+        La información obtenida en esta evaluación constituye un antecedente
+        inicial para el seguimiento educacional y podrá complementarse con
+        futuras evaluaciones durante la Enseñanza Media.
+    </p>
+
+    <hr>
+
+    <div style="background:#f5f5f5; padding:15px; border-radius:8px;">
+
+        <h3>Orientación para la familia y el establecimiento</h3>
+
+        <p>
+            Se recomienda utilizar este informe como primer antecedente de
+            seguimiento durante la Enseñanza Media. La información obtenida
+            puede apoyar conversaciones con el estudiante, observación de sus
+            intereses actuales y planificación de apoyos o actividades
+            complementarias.
+        </p>
+
+        <p>
+            Las futuras evaluaciones permitirán observar si los intereses se
+            consolidan, se amplían o requieren mayor acompañamiento dentro de
+            este nuevo ciclo educativo.
+        </p>
+
+    </div>
+
+    <hr>
+
+    <div style="text-align:center;">
+
+        <button onclick="window.print()"
+                class="btn">
+
+            Imprimir informe
+
+        </button>
+
+        <a href="{{ url_for('test_1m.download_report_1m_pdf', result_id=result.id) }}"
+           class="btn">
+
+            Descargar PDF
+
+        </a>
+
+        <a href="{{ url_for('home') }}"
+           class="btn">
+
+            Finalizar
+
+        </a>
+
+    </div>
+
+    <hr>
+
+    <p style="text-align:center;
+              font-size:14px;
+              color:#666;">
+
+        Desarrollado por David Vargas Orellana
+
+    </p>
+
+</div>
+
+{% endblock %}

@@ -1,0 +1,112 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<div class="card">
+
+    <h2>Administrar Historial DAVO</h2>
+
+    <p>
+        Esta opción permite corregir datos administrativos del registro histórico seleccionado.
+        No modifica las respuestas del test ni los puntajes obtenidos.
+    </p>
+
+    <hr>
+
+    <h3>Datos del estudiante</h3>
+
+    <p><strong>Alumno:</strong> {{ result.student_name }}</p>
+    <p><strong>RUT:</strong> {{ result.student_rut }}</p>
+    <p><strong>Área principal:</strong> {{ result.main_area }}</p>
+    <p><strong>Área secundaria:</strong> {{ result.secondary_area }}</p>
+
+    <hr>
+
+    <form method="POST">
+
+        <div style="margin-bottom:15px;">
+
+            <label><strong>Fecha de aplicación</strong></label><br>
+
+            <input type="date"
+                   name="created_at"
+                   value="{{ result.created_at.strftime('%Y-%m-%d') if result.created_at else '' }}"
+                   style="padding:8px; width:260px;"
+                   required>
+
+        </div>
+
+        <div style="margin-bottom:15px;">
+
+            <label><strong>Curso</strong></label><br>
+
+            <select name="course"
+                    style="padding:8px; width:280px;"
+                    required>
+
+                {% for c in courses %}
+                    <option value="{{ c }}"
+                        {% if result.course == c %}selected{% endif %}>
+                        {{ c }}
+                    </option>
+                {% endfor %}
+
+            </select>
+
+        </div>
+
+        <div style="margin-bottom:15px;">
+
+            <label><strong>Paralelo</strong></label><br>
+
+            <select name="section"
+                    style="padding:8px; width:280px;">
+
+                {% for s in sections %}
+                    <option value="{{ s }}"
+                        {% if result.section == s %}selected{% endif %}>
+                        {{ s }}
+                    </option>
+                {% endfor %}
+
+            </select>
+
+        </div>
+
+        <div style="margin-bottom:15px;">
+
+            <label><strong>Colegio asociado al registro</strong></label><br>
+
+            <select name="school_id"
+                    style="padding:8px; width:420px;"
+                    required>
+
+                {% for school in schools %}
+                    <option value="{{ school.id }}"
+                        {% if result.school_id == school.id %}selected{% endif %}>
+                        {{ school.name }}
+                    </option>
+                {% endfor %}
+
+            </select>
+
+        </div>
+
+        <hr>
+
+        <button type="submit"
+                class="btn"
+                onclick="return confirm('¿Guardar cambios en este registro histórico?');">
+            Guardar cambios
+        </button>
+
+        <a href="{{ url_for('admin.students', search=result.student_rut) }}"
+           class="btn btn-secondary">
+            Cancelar
+        </a>
+
+    </form>
+
+</div>
+
+{% endblock %}

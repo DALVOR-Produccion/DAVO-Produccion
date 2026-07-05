@@ -1,0 +1,227 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<div class="card">
+
+    <h2>Crear usuario institucional</h2>
+
+    <p>
+        Crear acceso institucional para establecimientos educacionales.
+    </p>
+
+    <hr>
+
+    <form method="POST" autocomplete="off">
+
+        <h3>Datos del responsable</h3>
+
+        <div class="form-group">
+
+            <label>RUT</label>
+
+            <input type="text"
+                   name="rut"
+                   required>
+
+        </div>
+
+        <div class="form-group">
+
+            <label>Nombre completo</label>
+
+            <input type="text"
+                   name="full_name"
+                   required>
+
+        </div>
+
+        <div class="form-group">
+
+            <label>Cargo</label>
+
+            <input type="text"
+                   name="cargo">
+
+        </div>
+
+        <div class="form-group">
+
+            <label>Correo electrónico</label>
+
+            <input type="email"
+                   name="email">
+
+        </div>
+
+        <div class="form-group">
+
+            <label>Teléfono</label>
+
+            <input type="text"
+                   name="phone">
+
+        </div>
+
+        <hr>
+
+        <h3>Asignación de establecimiento</h3>
+
+        <div class="form-group">
+
+            <label>Buscar colegio</label>
+
+            <input type="text"
+                   id="school_search"
+                   placeholder="Escriba nombre, comuna o RBD..."
+                   autocomplete="off">
+
+            <input type="hidden"
+                   id="school_id"
+                   name="school_id">
+
+            <div id="school_results"
+                 style="border:1px solid #ccc;
+                        display:none;
+                        background:white;
+                        max-height:200px;
+                        overflow-y:auto;
+                        margin-top:5px;">
+            </div>
+
+            <div id="school_selected"
+                 style="background:#f5f5f5;
+                        padding:10px;
+                        border-radius:8px;
+                        margin-top:10px;">
+                Ningún colegio seleccionado.
+            </div>
+
+        </div>
+
+        <hr>
+
+        <h3>Datos de acceso</h3>
+
+        <div class="form-group">
+
+            <label>Usuario</label>
+
+            <input type="text"
+                   name="username"
+                   required>
+
+        </div>
+
+        <div class="form-group">
+
+            <label>Contraseña inicial</label>
+
+            <input type="password"
+                   name="password"
+                   required>
+
+        </div>
+
+        <div class="form-group">
+
+            <label>Límite máximo de alumnos</label>
+
+            <input type="number"
+                   name="max_students"
+                   value="500"
+                   min="1">
+
+        </div>
+
+        <hr>
+
+        <button type="submit" class="btn">
+            Crear usuario institucional
+        </button>
+
+        <a href="{{ url_for('admin.institutional_users') }}"
+           class="btn btn-secondary">
+
+            Volver
+
+        </a>
+
+    </form>
+
+</div>
+
+<script>
+
+const schoolSearch = document.getElementById("school_search");
+const schoolResults = document.getElementById("school_results");
+
+schoolSearch.addEventListener("input", function() {
+
+    const texto = this.value.trim();
+
+    if (texto.length < 2) {
+
+        schoolResults.style.display = "none";
+        schoolResults.innerHTML = "";
+
+        return;
+    }
+
+    fetch("{{ url_for('students.buscar_colegios') }}?q=" + encodeURIComponent(texto))
+
+        .then(response => response.json())
+
+        .then(data => {
+
+            schoolResults.innerHTML = "";
+
+            if (data.length === 0) {
+
+                schoolResults.innerHTML =
+                    "<div style='padding:8px;'>No se encontraron colegios.</div>";
+
+                schoolResults.style.display = "block";
+
+                return;
+            }
+
+            data.forEach(function(colegio) {
+
+                const item = document.createElement("div");
+
+                item.textContent = colegio.label;
+
+                item.style.padding = "8px";
+                item.style.cursor = "pointer";
+                item.style.borderBottom = "1px solid #eee";
+
+                item.onclick = function() {
+
+                    document.getElementById("school_id").value = colegio.id;
+
+                    schoolSearch.value = colegio.label;
+
+                    document.getElementById("school_selected").innerHTML =
+                        "<strong>Colegio seleccionado:</strong><br>" +
+                        colegio.name + "<br>" +
+                        "Comuna: " + colegio.comuna + "<br>" +
+                        "RBD: " + colegio.rbd;
+
+                    schoolResults.style.display = "none";
+                    schoolResults.innerHTML = "";
+                };
+
+                schoolResults.appendChild(item);
+
+            });
+
+            schoolResults.style.display = "block";
+
+        });
+
+});
+
+</script>
+
+{% endblock %}

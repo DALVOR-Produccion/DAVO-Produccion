@@ -1,0 +1,209 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<div class="card">
+
+    <h2>Editar datos administrativos</h2>
+
+    <p>
+        El RUT del alumno no se puede modificar, porque es el dato utilizado para mantener su historial.
+    </p>
+
+    <hr>
+
+    <form method="POST" autocomplete="off">
+
+        <div class="form-group">
+            <label>RUT del alumno</label>
+            <input type="text" value="{{ result.student_rut }}" disabled>
+        </div>
+
+        <div class="form-group">
+            <label>Nombre del alumno</label>
+            <input type="text"
+                   name="student_name"
+                   value="{{ result.student_name }}"
+                   required>
+        </div>
+
+        <div class="form-group">
+            <label>Correo del alumno</label>
+            <input type="email"
+                   name="student_email"
+                   value="{{ student_record.student_email if student_record else '' }}">
+        </div>
+
+        <hr>
+
+        <h3>Tipo de registro</h3>
+
+        <label>
+            <input type="radio"
+                   name="student_type"
+                   value="COLEGIO"
+                   {% if result.student_type != 'PARTICULAR' %}checked{% endif %}
+                   onclick="mostrarTipo()">
+            Alumno asociado a colegio
+        </label>
+
+        <br>
+
+        <label>
+            <input type="radio"
+                   name="student_type"
+                   value="PARTICULAR"
+                   {% if result.student_type == 'PARTICULAR' %}checked{% endif %}
+                   onclick="mostrarTipo()">
+            Alumno particular
+        </label>
+
+        <div id="bloqueColegio" style="margin-top:15px;">
+
+            <label>Buscar colegio</label>
+
+            <input type="text"
+                   id="school_search"
+                   placeholder="Escriba nombre, comuna o RBD..."
+                   autocomplete="off">
+
+            <input type="hidden"
+                   id="school_id"
+                   name="school_id"
+                   value="{{ result.school_id or '' }}">
+
+            <div id="school_results"
+                 style="border:1px solid #ccc;
+                        display:none;
+                        background:white;
+                        max-height:200px;
+                        overflow-y:auto;
+                        margin-top:5px;">
+            </div>
+
+            <div id="school_selected"
+                 style="background:#f5f5f5;
+                        padding:10px;
+                        border-radius:8px;
+                        margin-top:10px;">
+                <strong>Colegio actual:</strong><br>
+                {{ result.school }}
+            </div>
+
+        </div>
+
+        <hr>
+
+        <h3>Datos del apoderado</h3>
+
+        <div class="form-group">
+            <label>RUT apoderado</label>
+            <input type="text"
+                   name="guardian_rut"
+                   value="{{ student_record.guardian_rut if student_record else '' }}">
+        </div>
+
+        <div class="form-group">
+            <label>Nombre apoderado</label>
+            <input type="text"
+                   name="guardian_name"
+                   value="{{ student_record.guardian_name if student_record else '' }}">
+        </div>
+
+        <div class="form-group">
+            <label>Correo apoderado</label>
+            <input type="email"
+                   name="guardian_email"
+                   value="{{ student_record.guardian_email if student_record else '' }}">
+        </div>
+
+        <hr>
+
+        <button type="submit" class="btn">
+            Guardar cambios
+        </button>
+
+        <a href="{{ url_for('admin.students') }}" class="btn">
+            Volver
+        </a>
+
+    </form>
+
+</div>
+
+<script>
+
+function mostrarTipo() {
+
+    const tipo = document.querySelector('input[name="student_type"]:checked').value;
+    const bloqueColegio = document.getElementById("bloqueColegio");
+
+    if (tipo === "PARTICULAR") {
+        bloqueColegio.style.display = "none";
+        document.getElementById("school_id").value = "";
+    } else {
+        bloqueColegio.style.display = "block";
+    }
+}
+
+const schoolSearch = document.getElementById("school_search");
+const schoolResults = document.getElementById("school_results");
+
+schoolSearch.addEventListener("input", function() {
+
+    const texto = this.value.trim();
+
+    if (texto.length < 2) {
+        schoolResults.style.display = "none";
+        schoolResults.innerHTML = "";
+        return;
+    }
+
+    fetch("{{ url_for('students.buscar_colegios') }}?q=" + encodeURIComponent(texto))
+        .then(response => response.json())
+        .then(data => {
+
+            schoolResults.innerHTML = "";
+
+            if (data.length === 0) {
+                schoolResults.innerHTML = "<div style='padding:8px;'>No se encontraron colegios.</div>";
+                schoolResults.style.display = "block";
+                return;
+            }
+
+            data.forEach(function(colegio) {
+
+                const item = document.createElement("div");
+
+                item.textContent = colegio.label;
+                item.style.padding = "8px";
+                item.style.cursor = "pointer";
+                item.style.borderBottom = "1px solid #eee";
+
+                item.onclick = function() {
+
+                    document.getElementById("school_id").value = colegio.id;
+                    schoolSearch.value = colegio.label;
+
+                    document.getElementById("school_selected").innerHTML =
+                        "<strong>Colegio seleccionado:</strong><br>" +
+                        colegio.name + "<br>" +
+                        "Comuna: " + colegio.comuna + "<br>" +
+                        "RBD: " + colegio.rbd;
+
+                    schoolResults.style.display = "none";
+                    schoolResults.innerHTML = "";
+                };
+
+                schoolResults.appendChild(item);
+            });
+
+            schoolResults.style.display = "block";
+        });
+});
+
+mostrarTipo();
+
+</script>
+
+{% endblock %}

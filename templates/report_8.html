@@ -1,0 +1,195 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<div class="card">
+
+    <h2 style="text-align:center;">
+        Informe de Orientación Educacional - 8° Básico
+    </h2>
+
+    <p style="text-align:center;">
+        Sistema Integral de Orientación Educacional
+    </p>
+
+    <hr>
+
+    <h3>Introducción</h3>
+
+    {% if report_type == "inicial_8" %}
+
+    <p>
+        Este informe corresponde a una evaluación de orientación educacional
+        aplicada en 8° básico, etapa en la que el estudiante comienza a enfrentar
+        decisiones relevantes respecto de su continuidad en enseñanza media.
+    </p>
+
+    <p>
+        Sus resultados no deben interpretarse como una definición absoluta,
+        sino como un apoyo inicial para orientar la reflexión del estudiante,
+        su familia y el establecimiento educacional.
+    </p>
+
+    {% elif report_type == "seguimiento_final_8" %}
+
+    <p>
+        Este informe corresponde a la etapa final de seguimiento del ciclo básico,
+        integrando los resultados actuales con antecedentes obtenidos en
+        evaluaciones previas.
+    </p>
+
+    <p>
+        Su propósito es apoyar una decisión más reflexiva y realista respecto
+        de la continuidad del estudiante en enseñanza media.
+    </p>
+
+    {% endif %}
+
+    <hr>
+
+    <h3>Datos del estudiante</h3>
+
+    <p><strong>Nombre del alumno:</strong> {{ result.student_name }}</p>
+
+    <p><strong>RUT:</strong> {{ result.student_rut }}</p>
+
+    <p>
+       <strong>Curso:</strong>
+       {{ result.course }}
+       {% if result.section and result.section != "SIN PARALELO" %}
+           {{ result.section }}
+       {% endif %}
+    </p>
+
+    <p><strong>Tipo de Test:</strong> {{ result.test_type }}</p>
+
+    <p><strong>Fecha:</strong> {{ result.created_at.strftime('%d-%m-%Y') }}</p>
+
+    <hr>
+
+    <h3>Resultados actuales</h3>
+
+    <p><strong>Área principal:</strong> {{ result.main_area }}</p>
+
+    <p><strong>Área secundaria:</strong> {{ result.secondary_area }}</p>
+
+    <p><strong>Modalidad sugerida:</strong> {{ result.suggested_path }}</p>
+
+    <hr>
+
+    <h3>Interpretación</h3>
+
+    <p>{{ interpretation }}</p>
+
+    {% if follow_up_text %}
+
+    <hr>
+
+    <h3>Análisis de seguimiento</h3>
+
+    {% if previous_result %}
+
+    <p>
+        <strong>Evaluación anterior:</strong>
+        {{ previous_result.created_at.strftime('%d-%m-%Y') }}
+    </p>
+
+    <p>
+        <strong>Área principal anterior:</strong>
+        {{ previous_result.main_area }}
+    </p>
+
+    <p>
+        <strong>Área secundaria anterior:</strong>
+        {{ previous_result.secondary_area }}
+    </p>
+
+    {% endif %}
+
+    <p>{{ follow_up_text }}</p>
+
+    {% endif %}
+
+    <hr>
+
+    <h3>Orientación para continuidad educativa</h3>
+
+    <p>{{ path_guidance }}</p>
+
+    <p>
+        Se recomienda complementar esta orientación con conversación familiar,
+        apoyo del establecimiento educacional y revisión de las distintas
+        alternativas formativas disponibles antes de tomar una decisión definitiva.
+    </p>
+
+    <hr>
+
+    <div style="margin-top:20px; border-top:1px solid #999; padding-top:10px;">
+        {% if publicidad %}
+
+            {% for item in publicidad %}
+
+                <div style="border:1px solid #ddd;
+                            padding:10px;
+                            margin-bottom:10px;
+                            border-radius:8px;">
+
+                    <p><strong>{{ item.nombre }}</strong></p>
+
+                    <p>{{ item.descripcion }}</p>
+
+                    {% if item.contacto %}
+                        <p><strong>Contacto:</strong> {{ item.contacto }}</p>
+                    {% endif %}
+
+                    {% if item.telefono %}
+                        <p><strong>Teléfono:</strong> {{ item.telefono }}</p>
+                    {% endif %}
+
+                </div>
+
+            {% endfor %}
+
+        {% endif %}
+    </div>
+
+    <hr>
+
+    <div style="text-align:center;">
+
+        <button onclick="window.print()"
+                class="btn">
+
+            Imprimir informe
+
+        </button>
+
+        <a href="{{ url_for('test_8.download_report_8_pdf', result_id=result.id) }}"
+           class="btn">
+
+            Descargar PDF
+
+        </a>
+
+        <a href="{{ url_for('home') }}"
+           class="btn">
+
+            Finalizar
+
+        </a>
+
+    </div>
+
+    <hr>
+
+    <p style="text-align:center;
+              font-size:14px;
+              color:#666;">
+
+        Desarrollado por David Vargas Orellana
+
+    </p>
+
+</div>
+
+{% endblock %}

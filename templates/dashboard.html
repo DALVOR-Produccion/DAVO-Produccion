@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="card">
+    <h2>Menú Principal</h2>
+    <p><strong>Usuario:</strong> {{ full_name }}</p>
+    <p><strong>Perfil:</strong> {{ role }}</p>
+
+    <hr>
+
+    <p>Seleccione una opción del sistema:</p>
+
+    <a href="{{ url_for('students.new_student') }}" class="btn">Ingresar datos del alumno</a>
+    <a href="{{ url_for('auth.logout') }}" class="btn btn-danger">Cerrar sesión</a>
+</div>
+{% endblock %}

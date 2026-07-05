@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="card">
+    <h2>Test Vocacional - 1° Medio</h2>
+
+    <form method="POST">
+
+        <h3>Contexto</h3>
+
+        <div class="form-group">
+            <label>Tipo de enseñanza</label>
+            <select name="education_type" id="education_type" required>
+                <option value="">Seleccione</option>
+                <option value="Científico-Humanista">Científico-Humanista</option>
+                <option value="Técnico Profesional">Técnico Profesional</option>
+                <option value="No está seguro">No está seguro</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>Área Técnico Profesional (si corresponde)</label>
+            <select name="tp_area" id="tp_area">
+                <option value="">No aplica</option>
+                <option>Industrial</option>
+                <option>Comercial</option>
+                <option>Servicios</option>
+                <option>Otro</option>
+                <option>No sabe</option>
+            </select>
+        </div>
+
+        <hr>
+
+        <h3>Preguntas del test</h3>
+
+        {% for q_id, question, area in questions %}
+            <div class="form-group">
+                <label>{{ q_id }}. {{ question }}</label>
+                <div>
+                    <label><input type="radio" name="q_{{ q_id }}" value="si" required> Sí</label>
+                    <label><input type="radio" name="q_{{ q_id }}" value="no"> No</label>
+                </div>
+            </div>
+        {% endfor %}
+
+        <div style="text-align:center; margin-top:20px;">
+            <button type="submit" class="btn">Finalizar Test</button>
+        </div>
+
+    </form>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+
+    const educationType = document.getElementById("education_type");
+    const tpArea = document.getElementById("tp_area");
+
+    function updateFields() {
+
+        if (educationType.value === "Técnico Profesional") {
+
+            tpArea.disabled = false;
+
+        } else if (educationType.value === "Científico-Humanista") {
+
+            tpArea.disabled = true;
+            tpArea.value = "";
+
+        } else {
+
+            // Caso "No está seguro"
+            tpArea.disabled = true;
+            tpArea.value = "";
+        }
+    }
+
+    educationType.addEventListener("change", updateFields);
+
+    updateFields();
+});
+</script>
+
+{% endblock %}

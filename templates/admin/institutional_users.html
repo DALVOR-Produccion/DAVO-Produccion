@@ -1,0 +1,160 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<style>
+
+.tabla-admin {
+
+    width: 100%;
+    border-collapse: collapse;
+
+}
+
+.tabla-admin th {
+
+    background: #0d6efd;
+    color: white;
+    padding: 8px;
+
+}
+
+.tabla-admin td {
+
+    border: 1px solid #ccc;
+    padding: 8px;
+
+}
+
+.link-admin {
+
+    text-decoration: none;
+    font-weight: bold;
+
+}
+
+</style>
+
+<div class="card">
+
+    <h2>Usuarios institucionales</h2>
+
+    <p>
+        Administración de accesos institucionales por establecimiento.
+    </p>
+
+    <hr>
+
+    <a href="{{ url_for('admin.new_institutional_user') }}"
+       class="btn">
+
+        Crear usuario institucional
+
+    </a>
+
+    <hr>
+
+    <div style="width:100%; overflow-x:auto;">
+
+        <table class="tabla-admin">
+
+            <tr>
+
+                <th>Colegio</th>
+                <th>Responsable</th>
+                <th>RUT</th>
+                <th>Cargo</th>
+                <th>Usuario</th>
+                <th>Email</th>
+                <th>Límite alumnos</th>
+                <th>Estado</th>
+                <th>Último acceso</th>
+                <th>Acción</th>
+
+            </tr>
+
+            {% for u in users %}
+
+            <tr>
+
+                <td>{{ u.school_name }}</td>
+
+                <td>{{ u.full_name }}</td>
+
+                <td>{{ u.rut }}</td>
+
+                <td>{{ u.cargo }}</td>
+
+                <td>{{ u.username }}</td>
+
+                <td>{{ u.email }}</td>
+
+                <td>{{ u.max_students }}</td>
+
+                <td>
+
+                    {% if u.is_active %}
+
+                        <span style="color:green; font-weight:bold;">
+                            Activo
+                        </span>
+
+                    {% else %}
+
+                        <span style="color:red; font-weight:bold;">
+                            Bloqueado
+                        </span>
+
+                    {% endif %}
+
+                </td>
+
+                <td>
+
+                    {% if u.last_login %}
+
+                        {{ u.last_login.strftime('%d-%m-%Y %H:%M') }}
+
+                    {% else %}
+
+                        Nunca
+
+                    {% endif %}
+
+                </td>
+
+                <td>
+
+                    <a class="link-admin"
+                       href="{{ url_for('admin.toggle_institutional_user', user_id=u.id) }}">
+
+                        {% if u.is_active %}
+                            Bloquear
+                        {% else %}
+                            Activar
+                        {% endif %}
+
+                    </a>
+
+                </td>
+
+            </tr>
+
+            {% endfor %}
+
+        </table>
+
+    </div>
+
+    <hr>
+
+    <a href="{{ url_for('admin.dashboard') }}"
+       class="btn">
+
+        Volver
+
+    </a>
+
+</div>
+
+{% endblock %}

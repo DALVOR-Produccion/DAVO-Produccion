@@ -1,0 +1,102 @@
+
+{% extends 'base.html' %}
+
+{% block content %}
+
+<div class="card">
+
+    <h2>Seguimiento Histórico DAVO</h2>
+
+    <p>
+        Busque un estudiante por RUT o nombre para revisar su trayectoria vocacional histórica.
+    </p>
+
+    <form method="GET" action="{{ url_for('historial.index') }}" style="margin-bottom:20px;">
+
+        <input type="text"
+               name="search"
+               value="{{ search }}"
+               placeholder="Buscar por RUT o nombre"
+               style="padding:8px; min-width:280px;">
+
+        <button type="submit" class="btn">
+            Buscar
+        </button>
+
+        <a href="{{ url_for('historial.index') }}" class="btn btn-secondary">
+            Limpiar
+        </a>
+
+    </form>
+
+    <div style="margin-bottom:20px;">
+
+        <a href="{{ url_for('historial.exportar_excel_historial') }}"
+           class="btn">
+            Exportar Historial DAVO a Excel
+        </a>
+
+    </div>
+
+    <div style="width:100%; overflow-x:auto;">
+
+        <table style="width:100%; border-collapse:collapse;">
+
+            <tr style="background:#0d6efd; color:white;">
+                <th style="padding:8px;">Alumno</th>
+                <th style="padding:8px;">RUT</th>
+                <th style="padding:8px;">Colegio actual</th>
+                <th style="padding:8px;">Curso actual</th>
+                <th style="padding:8px;">Área actual</th>
+                <th style="padding:8px;">Acción</th>
+            </tr>
+
+            {% for alumno in alumnos %}
+
+            <tr>
+                <td style="border:1px solid #ccc; padding:8px;">{{ alumno.student_name }}</td>
+                <td style="border:1px solid #ccc; padding:8px;">{{ alumno.student_rut }}</td>
+                <td style="border:1px solid #ccc; padding:8px;">{{ alumno.school }}</td>
+                <td style="border:1px solid #ccc; padding:8px;">
+                    {{ alumno.course }}
+                    {% if alumno.section and alumno.section != "SIN PARALELO" %}
+                        {{ alumno.section }}
+                    {% endif %}
+                </td>
+                <td style="border:1px solid #ccc; padding:8px;">{{ alumno.main_area }}</td>
+                <td style="border:1px solid #ccc; padding:8px; text-align:center;">
+                    <a href="{{ url_for('historial.detalle', rut=alumno.student_rut) }}" class="btn">
+                        Ver historial
+                    </a>
+                </td>
+            </tr>
+
+            {% endfor %}
+
+        </table>
+
+    </div>
+
+    {% if not alumnos %}
+
+        <p>No se encontraron estudiantes para la búsqueda realizada.</p>
+
+    {% endif %}
+
+    <hr>
+
+    {% if session.get("admin_logged") and not session.get("colegio_logged") %}
+        <a href="{{ url_for('admin.dashboard') }}" class="btn">
+            Volver al administrador
+        </a>
+    {% endif %}
+
+    {% if session.get("colegio_logged") %}
+        <a href="{{ url_for('colegio.dashboard') }}" class="btn btn-secondary">
+            Volver al panel colegio
+        </a>
+    {% endif %}
+
+</div>
+
+{% endblock %}

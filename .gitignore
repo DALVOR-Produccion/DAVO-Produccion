@@ -1,0 +1,20 @@
+# Entorno virtual
+venv/
+
+# Caché de Python
+__pycache__/
+*.pyc
+
+# Base de datos local
+*.db
+!database.db
+
+# Respaldos
+backup/
+
+# Configuración local
+instance/
+
+# Archivos del sistema
+.DS_Store
+Thumbs.db

@@ -1,0 +1,330 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<style>
+.tabla-talleres {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.tabla-talleres th {
+    background: #0d6efd;
+    color: white;
+    padding: 8px;
+}
+
+.tabla-talleres td {
+    border: 1px solid #ccc;
+    padding: 8px;
+}
+
+.filtro-box {
+    background:#f5f5f5;
+    padding:15px;
+    border-radius:8px;
+    margin-bottom:20px;
+}
+
+.resumen-box {
+    background:#f8f9fa;
+    border:1px solid #ddd;
+    border-radius:8px;
+    padding:12px;
+    margin-bottom:15px;
+}
+
+.taller-box {
+    background:#eef5ff;
+    border:1px solid #b6d4fe;
+    border-radius:8px;
+    padding:15px;
+    margin-bottom:20px;
+}
+
+.taller-box h3 {
+    margin-top:0;
+    color:#0d6efd;
+}
+</style>
+
+<div class="card">
+
+    <h2>Talleres vocacionales sugeridos</h2>
+
+    <p>
+        Propuesta de talleres según área vocacional, nivel educativo, curso y nómina de estudiantes compatibles.
+    </p>
+
+    <hr>
+
+    <div class="filtro-box">
+
+        <h3>Filtros de talleres</h3>
+
+        <form method="GET" action="{{ url_for('talleres.index') }}">
+
+            <div style="display:flex; flex-wrap:wrap; gap:10px; align-items:end;">
+
+                {% if session.get("admin_logged") and not session.get("colegio_logged") %}
+                <div>
+                    <label><strong>Colegio</strong></label><br>
+                    <select name="school" style="padding:8px; min-width:240px;">
+                        <option value="">Todos los colegios</option>
+
+                        {% for colegio in colegios %}
+                            <option value="{{ colegio }}"
+                                {% if selected_school == colegio %}selected{% endif %}>
+                                {{ colegio }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                {% endif %}
+
+                <div>
+                    <label><strong>Nivel</strong></label><br>
+                    <select name="level" style="padding:8px;">
+                        <option value="">Todos</option>
+                        <option value="basica" {% if selected_level == "basica" %}selected{% endif %}>
+                            Enseñanza Básica
+                        </option>
+                        <option value="media" {% if selected_level == "media" %}selected{% endif %}>
+                            Enseñanza Media
+                        </option>
+                    </select>
+                </div>
+
+                <div>
+                    <label><strong>Curso</strong></label><br>
+                    <select name="course" style="padding:8px;">
+                        <option value="">Todos</option>
+
+                        {% for c in courses %}
+                            <option value="{{ c }}"
+                                {% if selected_course == c %}selected{% endif %}>
+                                {{ c }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div>
+                    <label><strong>Paralelo</strong></label><br>
+                    <select name="section" style="padding:8px;">
+                        <option value="">Todos</option>
+
+                        {% for s in sections %}
+                            <option value="{{ s }}"
+                                {% if selected_section == s %}selected{% endif %}>
+                                {{ s }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div>
+                    <label><strong>Área</strong></label><br>
+                    <select name="area" style="padding:8px;">
+                        <option value="">Todas</option>
+
+                        {% for area in areas %}
+                            <option value="{{ area }}"
+                                {% if selected_area == area %}selected{% endif %}>
+                                {{ area }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div>
+                    <button type="submit" class="btn">
+                        Aplicar filtros
+                    </button>
+
+                    <a href="{{ url_for('talleres.index') }}"
+                       class="btn"
+                       style="background:#6c757d;">
+                        Limpiar
+                    </a>
+                </div>
+
+            </div>
+
+        </form>
+
+    </div>
+
+    <div class="resumen-box">
+
+        <strong>Vista actual:</strong>
+
+        {% if session.get("admin_logged") and not session.get("colegio_logged") %}
+
+            {% if selected_school %}
+                {{ selected_school }}
+            {% else %}
+                todos los colegios
+            {% endif %}
+
+        {% else %}
+
+            mi establecimiento
+
+        {% endif %}
+
+        {% if selected_level %}
+            |
+            {% if selected_level == "basica" %}
+                Enseñanza Básica
+            {% elif selected_level == "media" %}
+                Enseñanza Media
+            {% endif %}
+        {% endif %}
+
+        {% if selected_course %}
+            | {{ selected_course }}
+        {% endif %}
+
+        {% if selected_section %}
+            | Paralelo {{ selected_section }}
+        {% endif %}
+
+        {% if selected_area %}
+            | Área {{ selected_area }}
+        {% endif %}
+
+        <br><br>
+
+        <strong>Total estudiantes encontrados:</strong> {{ results|length }}
+
+    </div>
+
+    <div class="taller-box">
+
+        {% if taller_info.mostrar %}
+
+            <h3>{{ taller_info.nombre }}</h3>
+
+            <p><strong>Área:</strong> {{ taller_info.area }}</p>
+            <p><strong>Etapa educativa:</strong> {{ taller_info.etapa }}</p>
+            <p><strong>Participantes sugeridos:</strong> {{ taller_info.total_estudiantes }}</p>
+
+            <p><strong>Objetivo:</strong> {{ taller_info.objetivo }}</p>
+
+            <p><strong>Enfoque pedagógico:</strong> {{ taller_info.enfoque }}</p>
+
+            <p><strong>Actividades sugeridas:</strong></p>
+
+            <ul>
+                {% for actividad in taller_info.actividades %}
+                    <li>{{ actividad }}</li>
+                {% endfor %}
+            </ul>
+
+            <p><strong>Recomendación:</strong> {{ taller_info.recomendacion }}</p>
+
+        {% else %}
+
+            <h3>Seleccione un área para generar una propuesta de taller</h3>
+
+            <p>
+                Para que DAVO entregue una propuesta pedagógica completa, seleccione un área
+                vocacional y, de ser posible, indique si corresponde a enseñanza básica o media.
+            </p>
+
+            <p>
+                Se recomienda no mezclar estudiantes de enseñanza básica y media en una misma nómina,
+                porque sus necesidades de orientación son distintas.
+            </p>
+
+        {% endif %}
+
+    </div>
+
+    <div style="margin-bottom:15px;">
+
+        {% if session.get("admin_logged") and not session.get("colegio_logged") %}
+            <a href="{{ url_for(
+                'talleres.descargar_pdf',
+                school=selected_school,
+                level=selected_level,
+                course=selected_course,
+                section=selected_section,
+                area=selected_area
+            ) }}"
+               class="btn">
+                Descargar PDF con filtros actuales
+            </a>
+        {% else %}
+            <a href="{{ url_for(
+                'talleres.descargar_pdf',
+                level=selected_level,
+                course=selected_course,
+                section=selected_section,
+                area=selected_area
+            ) }}"
+               class="btn">
+                Descargar PDF con filtros actuales
+            </a>
+        {% endif %}
+
+    </div>
+
+    <div style="width:100%; overflow-x:auto;">
+
+        <table class="tabla-talleres">
+
+            <tr>
+                <th>Alumno</th>
+                <th>RUT</th>
+                <th>Colegio</th>
+                <th>Curso</th>
+                <th>Paralelo</th>
+                <th>Área principal</th>
+                <th>Área secundaria</th>
+                <th>Fecha</th>
+            </tr>
+
+            {% for r in results %}
+
+            <tr>
+                <td>{{ r.student_name }}</td>
+                <td>{{ r.student_rut }}</td>
+                <td>{{ r.school }}</td>
+                <td>{{ r.course }}</td>
+                <td>
+                    {% if r.section and r.section != "SIN PARALELO" %}
+                        {{ r.section }}
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+                <td>{{ r.main_area }}</td>
+                <td>{{ r.secondary_area }}</td>
+                <td>{{ r.created_at.strftime('%d-%m-%Y') }}</td>
+            </tr>
+
+            {% endfor %}
+
+        </table>
+
+    </div>
+
+    <hr>
+
+    {% if session.get("admin_logged") and not session.get("colegio_logged") %}
+        <a href="{{ url_for('admin.dashboard') }}" class="btn">
+            Volver al administrador
+        </a>
+    {% endif %}
+
+    {% if session.get("colegio_logged") %}
+        <a href="{{ url_for('colegio.dashboard') }}" class="btn btn-secondary">
+            Volver al panel colegio
+        </a>
+    {% endif %}
+
+</div>
+
+{% endblock %}

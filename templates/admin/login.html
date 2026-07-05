@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<div class="card"
+     style="max-width:500px; margin:auto;">
+
+    <h2 style="text-align:center;">
+
+        Panel Administrador
+
+    </h2>
+
+    <p style="text-align:center;">
+
+        <strong>
+            Sistema Integral de Orientación Educacional
+        </strong>
+
+    </p>
+
+    <hr>
+
+    <form method="POST">
+
+        <div class="form-group">
+
+            <label>Usuario</label>
+
+            <input type="text"
+                   name="username"
+                   class="form-control"
+                   required>
+
+        </div>
+
+        <div class="form-group">
+
+            <label>Contraseña</label>
+
+            <input type="password"
+                   name="password"
+                   class="form-control"
+                   required>
+
+        </div>
+
+        <div style="text-align:center;
+                    margin-top:20px;">
+
+            <button type="submit"
+                    class="btn">
+
+                Ingresar
+
+            </button>
+
+        </div>
+
+    </form>
+
+    <hr>
+
+    <p style="text-align:center;
+              font-size:14px;
+              color:#666;">
+
+        Desarrollado por David Vargas Orellana
+
+    </p>
+
+</div>
+
+{% endblock %}
