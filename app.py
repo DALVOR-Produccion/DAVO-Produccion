@@ -17,6 +17,21 @@ from routes.talleres import talleres_bp
 from routes.historial import historial_bp
 
 
+def create_default_admin():
+    admin = User.query.filter_by(username="admin").first()
+
+    if not admin:
+        admin = User(
+            username="admin",
+            full_name="Administrador DAVO",
+            role="admin",
+            is_active=True,
+        )
+        admin.set_password("Davo@2026Segura")
+        db.session.add(admin)
+        db.session.commit()
+
+
 def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
@@ -50,33 +65,18 @@ def create_app():
         )
 
     with app.app_context():
-    db.create_all()
+        db.create_all()
 
-    from services.seed_schools import cargar_colegios_iniciales
+        from services.seed_schools import cargar_colegios_iniciales
 
-    cantidad = cargar_colegios_iniciales()
+        cantidad = cargar_colegios_iniciales()
 
-    if cantidad:
-        print(f"Se cargaron {cantidad} colegios iniciales.")
+        if cantidad:
+            print(f"Se cargaron {cantidad} colegios iniciales.")
 
-    create_default_admin()
+        create_default_admin()
 
     return app
-
-
-def create_default_admin():
-    admin = User.query.filter_by(username="admin").first()
-
-    if not admin:
-        admin = User(
-            username="admin",
-            full_name="Administrador DAVO",
-            role="admin",
-            is_active=True,
-        )
-        admin.set_password("Davo@2026Segura")
-        db.session.add(admin)
-        db.session.commit()
 
 
 app = create_app()
