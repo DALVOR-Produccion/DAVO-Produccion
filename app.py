@@ -50,8 +50,16 @@ def create_app():
         )
 
     with app.app_context():
-        db.create_all()
-        create_default_admin()
+    db.create_all()
+
+    from services.seed_schools import cargar_colegios_iniciales
+
+    cantidad = cargar_colegios_iniciales()
+
+    if cantidad:
+        print(f"Se cargaron {cantidad} colegios iniciales.")
+
+    create_default_admin()
 
     return app
 
