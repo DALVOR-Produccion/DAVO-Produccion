@@ -3,6 +3,7 @@ from flask import Flask, render_template, session
 from config import Config
 from models import db
 from models.user import User
+from models.stored_report import StoredReport
 from routes.auth import auth_bp, login_required
 from routes.students import students_bp
 from routes.test import test_bp
