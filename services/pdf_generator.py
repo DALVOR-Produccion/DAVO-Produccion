@@ -5,7 +5,15 @@ from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import cm
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.enums import TA_CENTER
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, HRFlowable
+from reportlab.platypus import (
+    SimpleDocTemplate,
+    Paragraph,
+    Spacer,
+    HRFlowable
+)
+
+from services.report_storage import guardar_informe_pdf
+
 
 try:
     from publicidad import obtener_publicidad
@@ -16,7 +24,18 @@ except Exception:
 def limpiar_nombre_archivo(texto):
     texto = (texto or "archivo").strip().replace(" ", "_")
 
-    caracteres_invalidos = ['\\', '/', ':', '*', '?', '"', '<', '>', '|', '°']
+    caracteres_invalidos = [
+        "\\",
+        "/",
+        ":",
+        "*",
+        "?",
+        '"',
+        "<",
+        ">",
+        "|",
+        "°"
+    ]
 
     for caracter in caracteres_invalidos:
         texto = texto.replace(caracter, "")
@@ -26,10 +45,10 @@ def limpiar_nombre_archivo(texto):
 
 def agregar_bloque_publicidad(story, result, normal_style):
     """
-    Bloque publicitario opcional.
+    Agrega un bloque publicitario opcional al final del informe.
 
-    Si publicidad.py no tiene datos cargados, solo deja una línea separadora
-    al final del informe. No modifica resultados, interpretación ni recomendaciones.
+    Si publicidad.py no existe, presenta un error o no contiene
+    información para el curso, solo se mantiene la línea separadora.
     """
 
     story.append(Spacer(1, 0.4 * cm))
@@ -47,7 +66,16 @@ def agregar_bloque_publicidad(story, result, normal_style):
     if not obtener_publicidad:
         return
 
-    publicidad = obtener_publicidad(getattr(result, "course", None))
+    try:
+        publicidad = obtener_publicidad(
+            getattr(result, "course", None)
+        )
+    except Exception as error:
+        print(
+            "No se pudo obtener la publicidad para el informe: "
+            f"{error}"
+        )
+        return
 
     if not publicidad:
         return
@@ -61,23 +89,84 @@ def agregar_bloque_publicidad(story, result, normal_style):
         telefono = aviso.get("telefono", "")
 
         if nombre:
-            story.append(Paragraph(f"<b>{nombre}</b>", normal_style))
+            story.append(
+                Paragraph(
+                    f"<b>{nombre}</b>",
+                    normal_style
+                )
+            )
 
         if descripcion:
-            story.append(Paragraph(descripcion, normal_style))
+            story.append(
+                Paragraph(
+                    descripcion,
+                    normal_style
+                )
+            )
 
         datos_contacto = []
 
         if contacto:
-            datos_contacto.append(f"Contacto: {contacto}")
+            datos_contacto.append(
+                f"Contacto: {contacto}"
+            )
 
         if telefono:
-            datos_contacto.append(f"Teléfono: {telefono}")
+            datos_contacto.append(
+                f"Teléfono: {telefono}"
+            )
 
         if datos_contacto:
-            story.append(Paragraph(" | ".join(datos_contacto), normal_style))
+            story.append(
+                Paragraph(
+                    " | ".join(datos_contacto),
+                    normal_style
+                )
+            )
 
         story.append(Spacer(1, 0.2 * cm))
+
+
+def respaldar_pdf_generado(result, ruta_pdf):
+    """
+    Guarda en PostgreSQL una copia del PDF recién generado.
+
+    El respaldo no interrumpe la generación ni la descarga del
+    informe si ocurre un error inesperado.
+    """
+
+    result_id = getattr(result, "id", None)
+
+    if not result_id:
+        print(
+            "No se pudo respaldar el PDF porque el resultado "
+            "todavía no tiene un identificador."
+        )
+        return None
+
+    try:
+        informe_guardado = guardar_informe_pdf(
+            result_id=result_id,
+            ruta_pdf=ruta_pdf
+        )
+
+        print(
+            "Informe PDF respaldado correctamente. "
+            f"Resultado: {result_id}. "
+            f"Archivo: {informe_guardado.filename}. "
+            f"Tamaño: {informe_guardado.size_bytes} bytes."
+        )
+
+        return informe_guardado
+
+    except Exception as error:
+        print(
+            "No se pudo guardar el respaldo permanente del PDF. "
+            f"Resultado: {result_id}. "
+            f"Error: {error}"
+        )
+
+        return None
 
 
 def generar_pdf_informe(
@@ -91,15 +180,35 @@ def generar_pdf_informe(
     talleres=None,
     orientacion=None
 ):
-    os.makedirs(carpeta_salida, exist_ok=True)
+    """
+    Genera el informe PDF en una carpeta temporal y guarda
+    automáticamente una copia permanente en PostgreSQL.
+    """
+
+    os.makedirs(
+        carpeta_salida,
+        exist_ok=True
+    )
 
     fecha_actual = datetime.now()
-    anio = fecha_actual.strftime("%Y")
-    fecha = fecha_actual.strftime("%d-%m-%Y_%H-%M-%S")
 
-    colegio = limpiar_nombre_archivo(result.school or "SIN_COLEGIO")
-    curso = limpiar_nombre_archivo(result.course or "SIN_CURSO")
-    nombre_alumno = limpiar_nombre_archivo(result.student_name or "Alumno")
+    anio = fecha_actual.strftime("%Y")
+    fecha_documento = fecha_actual.strftime("%d-%m-%Y")
+    fecha_archivo = fecha_actual.strftime(
+        "%d-%m-%Y_%H-%M-%S"
+    )
+
+    colegio = limpiar_nombre_archivo(
+        result.school or "SIN_COLEGIO"
+    )
+
+    curso = limpiar_nombre_archivo(
+        result.course or "SIN_CURSO"
+    )
+
+    nombre_alumno = limpiar_nombre_archivo(
+        result.student_name or "Alumno"
+    )
 
     carpeta_final = os.path.join(
         carpeta_salida,
@@ -108,11 +217,20 @@ def generar_pdf_informe(
         curso
     )
 
-    os.makedirs(carpeta_final, exist_ok=True)
+    os.makedirs(
+        carpeta_final,
+        exist_ok=True
+    )
 
-    nombre_archivo = f"{nombre_alumno}_Informe_Orientacion_{fecha}.pdf"
+    nombre_archivo = (
+        f"{nombre_alumno}_Informe_Orientacion_"
+        f"{fecha_archivo}.pdf"
+    )
 
-    ruta_pdf = os.path.join(carpeta_final, nombre_archivo)
+    ruta_pdf = os.path.join(
+        carpeta_final,
+        nombre_archivo
+    )
 
     doc = SimpleDocTemplate(
         ruta_pdf,
@@ -152,18 +270,71 @@ def generar_pdf_informe(
 
     story = []
 
-    story.append(Paragraph("Sistema Integral de Orientación Educacional", titulo_style))
-    story.append(Paragraph("Desarrollado por David Vargas Orellana", normal_style))
-    story.append(Paragraph(titulo, titulo_style))
-    story.append(Spacer(1, 0.3 * cm))
+    story.append(
+        Paragraph(
+            "Sistema Integral de Orientación Educacional",
+            titulo_style
+        )
+    )
 
-    story.append(Paragraph("Datos del estudiante", subtitulo_style))
-    story.append(Paragraph(f"<b>Nombre:</b> {result.student_name}", normal_style))
-    story.append(Paragraph(f"<b>RUT:</b> {result.student_rut}", normal_style))
-    story.append(Paragraph(f"<b>Colegio:</b> {result.school or 'No registrado'}", normal_style))
+    story.append(
+        Paragraph(
+            "Desarrollado por David Vargas Orellana",
+            normal_style
+        )
+    )
+
+    story.append(
+        Paragraph(
+            titulo,
+            titulo_style
+        )
+    )
+
+    story.append(
+        Spacer(
+            1,
+            0.3 * cm
+        )
+    )
+
+    story.append(
+        Paragraph(
+            "Datos del estudiante",
+            subtitulo_style
+        )
+    )
+
+    story.append(
+        Paragraph(
+            f"<b>Nombre:</b> {result.student_name}",
+            normal_style
+        )
+    )
+
+    story.append(
+        Paragraph(
+            f"<b>RUT:</b> {result.student_rut}",
+            normal_style
+        )
+    )
+
+    story.append(
+        Paragraph(
+            (
+                "<b>Colegio:</b> "
+                f"{result.school or 'No registrado'}"
+            ),
+            normal_style
+        )
+    )
+
     curso_completo = result.course or "SIN CURSO"
 
-    if getattr(result, "section", None) and result.section != "SIN PARALELO":
+    if (
+        getattr(result, "section", None)
+        and result.section != "SIN PARALELO"
+    ):
         curso_completo += f" {result.section}"
 
     story.append(
@@ -172,50 +343,181 @@ def generar_pdf_informe(
             normal_style
         )
     )
-    story.append(Paragraph(f"<b>Tipo de test:</b> {result.test_type}", normal_style))
-    story.append(Paragraph(f"<b>Fecha:</b> {fecha}", normal_style))
-
-    story.append(Spacer(1, 0.3 * cm))
-
-    story.append(Paragraph("Introducción", subtitulo_style))
-    story.append(Paragraph(introduccion, normal_style))
-
-    story.append(Paragraph("Resultados", subtitulo_style))
-    story.append(Paragraph(f"<b>Área principal observada:</b> {result.main_area}", normal_style))
-    story.append(Paragraph(f"<b>Área secundaria observada:</b> {result.secondary_area}", normal_style))
-
-    if getattr(result, "suggested_path", None):
-        story.append(Paragraph(f"<b>Modalidad o ruta sugerida:</b> {result.suggested_path}", normal_style))
-
-    story.append(Paragraph("Interpretación", subtitulo_style))
-    story.append(Paragraph(interpretacion, normal_style))
-
-    if seguimiento:
-        story.append(Paragraph("Análisis de seguimiento", subtitulo_style))
-        story.append(Paragraph(seguimiento, normal_style))
-
-    if orientacion:
-        story.append(Paragraph("Orientación para continuidad educativa", subtitulo_style))
-        story.append(Paragraph(orientacion, normal_style))
-
-    story.append(Paragraph("Recomendación", subtitulo_style))
-    story.append(Paragraph(recomendacion, normal_style))
-
-    if talleres:
-        story.append(Paragraph("Sugerencia de talleres o actividades", subtitulo_style))
-        story.append(Paragraph(talleres, normal_style))
-
-    story.append(Spacer(1, 0.5 * cm))
 
     story.append(
         Paragraph(
-            "Documento generado automáticamente por el Sistema Integral de Orientación Educacional.",
+            f"<b>Tipo de test:</b> {result.test_type}",
             normal_style
         )
     )
 
-    agregar_bloque_publicidad(story, result, normal_style)
+    story.append(
+        Paragraph(
+            f"<b>Fecha:</b> {fecha_documento}",
+            normal_style
+        )
+    )
+
+    story.append(
+        Spacer(
+            1,
+            0.3 * cm
+        )
+    )
+
+    story.append(
+        Paragraph(
+            "Introducción",
+            subtitulo_style
+        )
+    )
+
+    story.append(
+        Paragraph(
+            introduccion,
+            normal_style
+        )
+    )
+
+    story.append(
+        Paragraph(
+            "Resultados",
+            subtitulo_style
+        )
+    )
+
+    story.append(
+        Paragraph(
+            (
+                "<b>Área principal observada:</b> "
+                f"{result.main_area}"
+            ),
+            normal_style
+        )
+    )
+
+    story.append(
+        Paragraph(
+            (
+                "<b>Área secundaria observada:</b> "
+                f"{result.secondary_area}"
+            ),
+            normal_style
+        )
+    )
+
+    if getattr(result, "suggested_path", None):
+        story.append(
+            Paragraph(
+                (
+                    "<b>Modalidad o ruta sugerida:</b> "
+                    f"{result.suggested_path}"
+                ),
+                normal_style
+            )
+        )
+
+    story.append(
+        Paragraph(
+            "Interpretación",
+            subtitulo_style
+        )
+    )
+
+    story.append(
+        Paragraph(
+            interpretacion,
+            normal_style
+        )
+    )
+
+    if seguimiento:
+        story.append(
+            Paragraph(
+                "Análisis de seguimiento",
+                subtitulo_style
+            )
+        )
+
+        story.append(
+            Paragraph(
+                seguimiento,
+                normal_style
+            )
+        )
+
+    if orientacion:
+        story.append(
+            Paragraph(
+                "Orientación para continuidad educativa",
+                subtitulo_style
+            )
+        )
+
+        story.append(
+            Paragraph(
+                orientacion,
+                normal_style
+            )
+        )
+
+    story.append(
+        Paragraph(
+            "Recomendación",
+            subtitulo_style
+        )
+    )
+
+    story.append(
+        Paragraph(
+            recomendacion,
+            normal_style
+        )
+    )
+
+    if talleres:
+        story.append(
+            Paragraph(
+                "Sugerencia de talleres o actividades",
+                subtitulo_style
+            )
+        )
+
+        story.append(
+            Paragraph(
+                talleres,
+                normal_style
+            )
+        )
+
+    story.append(
+        Spacer(
+            1,
+            0.5 * cm
+        )
+    )
+
+    story.append(
+        Paragraph(
+            (
+                "Documento generado automáticamente por el "
+                "Sistema Integral de Orientación Educacional."
+            ),
+            normal_style
+        )
+    )
+
+    agregar_bloque_publicidad(
+        story,
+        result,
+        normal_style
+    )
 
     doc.build(story)
+
+    respaldar_pdf_generado(
+        result=result,
+        ruta_pdf=ruta_pdf
+    )
 
     return ruta_pdf
