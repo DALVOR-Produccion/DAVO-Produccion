@@ -1,4 +1,5 @@
 from flask import Flask, render_template, session
+from sqlalchemy import text
 
 from config import Config
 from models import db
@@ -33,6 +34,62 @@ def create_default_admin():
         db.session.commit()
 
 
+def actualizar_columna_section():
+    """
+    Revisa el tamaño de la columna students.section.
+
+    Si la columna tiene menos de 20 caracteres, la amplía a VARCHAR(20).
+    La operación no elimina ni modifica los registros existentes.
+    """
+
+    try:
+        resultado = db.session.execute(
+            text(
+                """
+                SELECT character_maximum_length
+                FROM information_schema.columns
+                WHERE table_name = 'students'
+                  AND column_name = 'section'
+                """
+            )
+        ).scalar()
+
+        if resultado is None:
+            print(
+                "AVISO: No se encontró la columna students.section. "
+                "No se realizó ninguna modificación."
+            )
+            return
+
+        if resultado < 20:
+            db.session.execute(
+                text(
+                    """
+                    ALTER TABLE students
+                    ALTER COLUMN section TYPE VARCHAR(20)
+                    """
+                )
+            )
+            db.session.commit()
+
+            print(
+                "CORRECCIÓN REALIZADA: "
+                "students.section fue ampliada a VARCHAR(20)."
+            )
+        else:
+            print(
+                "VERIFICACIÓN CORRECTA: "
+                f"students.section ya permite {resultado} caracteres."
+            )
+
+    except Exception as error:
+        db.session.rollback()
+        print(
+            "ERROR AL ACTUALIZAR students.section: "
+            f"{type(error).__name__}: {error}"
+        )
+
+
 def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
@@ -62,11 +119,14 @@ def create_app():
         return render_template(
             "dashboard.html",
             full_name=session.get("full_name"),
-            role=session.get("role")
+            role=session.get("role"),
         )
 
     with app.app_context():
         db.create_all()
+
+        # Corrige automáticamente la longitud de students.section.
+        actualizar_columna_section()
 
         from services.seed_schools import cargar_colegios_iniciales
 
