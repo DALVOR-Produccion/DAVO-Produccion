@@ -38,7 +38,7 @@ class TestResult(db.Model):
     )
 
     section = db.Column(
-    db.String(5),
+    db.String(20),
     nullable=True
     )
 
