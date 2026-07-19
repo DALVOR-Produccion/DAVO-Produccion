@@ -34,60 +34,67 @@ def create_default_admin():
         db.session.commit()
 
 
-def actualizar_columna_section():
+def actualizar_columnas_section():
     """
-    Revisa el tamaño de la columna students.section.
-
-    Si la columna tiene menos de 20 caracteres, la amplía a VARCHAR(20).
-    La operación no elimina ni modifica los registros existentes.
+    Amplía las columnas section de las tablas students y test_results
+    cuando todavía tienen una longitud menor a 20 caracteres.
     """
 
-    try:
-        resultado = db.session.execute(
-            text(
-                """
-                SELECT character_maximum_length
-                FROM information_schema.columns
-                WHERE table_name = 'students'
-                  AND column_name = 'section'
-                """
-            )
-        ).scalar()
+    tablas = ["students", "test_results"]
 
-        if resultado is None:
-            print(
-                "AVISO: No se encontró la columna students.section. "
-                "No se realizó ninguna modificación."
-            )
-            return
-
-        if resultado < 20:
-            db.session.execute(
+    for tabla in tablas:
+        try:
+            longitud_actual = db.session.execute(
                 text(
                     """
-                    ALTER TABLE students
-                    ALTER COLUMN section TYPE VARCHAR(20)
+                    SELECT character_maximum_length
+                    FROM information_schema.columns
+                    WHERE table_schema = 'public'
+                      AND table_name = :tabla
+                      AND column_name = 'section'
                     """
+                ),
+                {"tabla": tabla},
+            ).scalar()
+
+            if longitud_actual is None:
+                print(
+                    f"AVISO: No se encontró la columna "
+                    f"{tabla}.section."
                 )
-            )
-            db.session.commit()
+                continue
+
+            if longitud_actual < 20:
+                db.session.execute(
+                    text(
+                        f"""
+                        ALTER TABLE {tabla}
+                        ALTER COLUMN section TYPE VARCHAR(20)
+                        """
+                    )
+                )
+
+                db.session.commit()
+
+                print(
+                    f"CORRECCIÓN REALIZADA: "
+                    f"{tabla}.section fue ampliada "
+                    f"de VARCHAR({longitud_actual}) a VARCHAR(20)."
+                )
+            else:
+                print(
+                    f"VERIFICACIÓN CORRECTA: "
+                    f"{tabla}.section ya permite "
+                    f"{longitud_actual} caracteres."
+                )
+
+        except Exception as error:
+            db.session.rollback()
 
             print(
-                "CORRECCIÓN REALIZADA: "
-                "students.section fue ampliada a VARCHAR(20)."
+                f"ERROR AL ACTUALIZAR {tabla}.section: "
+                f"{type(error).__name__}: {error}"
             )
-        else:
-            print(
-                "VERIFICACIÓN CORRECTA: "
-                f"students.section ya permite {resultado} caracteres."
-            )
-
-    except Exception as error:
-        db.session.rollback()
-        print(
-            "ERROR AL ACTUALIZAR students.section: "
-            f"{type(error).__name__}: {error}"
-        )
 
 
 def create_app():
@@ -125,8 +132,7 @@ def create_app():
     with app.app_context():
         db.create_all()
 
-        # Corrige automáticamente la longitud de students.section.
-        actualizar_columna_section()
+        actualizar_columnas_section()
 
         from services.seed_schools import cargar_colegios_iniciales
 
