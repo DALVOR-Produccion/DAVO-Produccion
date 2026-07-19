@@ -1,4 +1,5 @@
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash, send_file
+from io import BytesIO
 
 from models import db
 from models.test_result import TestResult
@@ -6,6 +7,7 @@ from models.student import Student
 from models.school import School
 
 from models.institutional_user import InstitutionalUser
+from services.report_storage import obtener_informe_pdf
 from datetime import datetime
 from sqlalchemy import case
 
@@ -568,6 +570,50 @@ def students():
         courses=courses,
         selected_course=course,
         search=search
+    )
+
+
+
+@admin_bp.route("/view_report/<int:result_id>")
+def view_report(result_id):
+    """
+    Muestra en el navegador el informe PDF permanente asociado
+    a un resultado de test.
+
+    No modifica ni regenera informes. Si todavía no existe un
+    respaldo en PostgreSQL, vuelve al listado con un aviso.
+    """
+
+    if not session.get("admin_logged"):
+        return redirect(url_for("admin.admin_login"))
+
+    result = TestResult.query.get_or_404(result_id)
+
+    informe = obtener_informe_pdf(result.id)
+
+    if informe is None or not informe.pdf_data:
+        flash(
+            "Este registro todavía no tiene un informe PDF almacenado. "
+            "El informe quedará disponible después de que sea generado "
+            "nuevamente desde el test.",
+            "warning"
+        )
+
+        return redirect(url_for(
+            "admin.students",
+            search=result.student_rut
+        ))
+
+    nombre_archivo = (
+        informe.filename
+        or f"informe_davo_{result.id}.pdf"
+    )
+
+    return send_file(
+        BytesIO(informe.pdf_data),
+        mimetype=informe.mime_type or "application/pdf",
+        download_name=nombre_archivo,
+        as_attachment=False
     )
 
 
