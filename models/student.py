@@ -12,7 +12,7 @@ class Student(db.Model):
     school_id = db.Column(db.Integer, nullable=True)
     student_type = db.Column(db.String(20), default="COLEGIO")
     course = db.Column(db.String(50), nullable=False)
-    section = db.Column(db.String(5), nullable=True)
+    section = db.Column(db.String(20), nullable=True)
     student_email = db.Column(db.String(120), nullable=True)
 
     guardian_rut = db.Column(db.String(20), nullable=False)
