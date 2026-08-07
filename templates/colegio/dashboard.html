@@ -25,6 +25,25 @@
     padding:15px;
     border-radius:8px;
 }
+
+.acciones-panel {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+}
+
+.acciones-panel .btn-secondary {
+    margin-left: 0;
+}
+
+@media (max-width: 600px) {
+    .acciones-panel .btn {
+        width: 100%;
+        box-sizing: border-box;
+        text-align: center;
+    }
+}
 </style>
 
 <div class="card">
@@ -162,21 +181,27 @@
 
     <hr>
 
-    <a href="{{ url_for('colegio.alumnos') }}" class="btn">
-        Ver alumnos
-    </a>
+    <div class="acciones-panel">
+        <a href="{{ url_for('colegio.alumnos') }}" class="btn">
+            Ver alumnos
+        </a>
 
-    <a href="{{ url_for('talleres.index') }}" class="btn">
-        Talleres sugeridos
-    </a>
+        <a href="{{ url_for('colegio.exportar') }}" class="btn">
+            Descargar datos en Excel
+        </a>
 
-    <a href="{{ url_for('historial.index') }}" class="btn">
-        Seguimiento Histórico DAVO
-    </a>
+        <a href="{{ url_for('talleres.index') }}" class="btn">
+            Talleres sugeridos
+        </a>
 
-    <a href="{{ url_for('colegio.logout') }}" class="btn btn-secondary">
-        Salir
-    </a>
+        <a href="{{ url_for('historial.index') }}" class="btn">
+            Seguimiento Histórico DAVO
+        </a>
+
+        <a href="{{ url_for('colegio.logout') }}" class="btn btn-secondary">
+            Salir
+        </a>
+    </div>
 
 </div>
 

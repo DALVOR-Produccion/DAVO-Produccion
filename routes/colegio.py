@@ -1,11 +1,22 @@
 from datetime import datetime
 
-from flask import Blueprint, render_template, request, redirect, url_for, session, flash
+from flask import (
+    Blueprint,
+    flash,
+    redirect,
+    render_template,
+    request,
+    send_file,
+    session,
+    url_for,
+)
 
 from models import db
 from models.test_result import TestResult
 from models.institutional_user import InstitutionalUser
 from sqlalchemy import case
+from services.institutional_excel import crear_excel_institucional
+import re
 
 
 colegio_bp = Blueprint("colegio", __name__, url_prefix="/colegio")
@@ -290,6 +301,102 @@ def alumnos():
         "colegio/alumnos.html",
         results=results,
         school_name=session.get("colegio_school_name")
+    )
+
+
+def obtener_anios_disponibles_colegio(school_id):
+    fechas = (
+        TestResult.query
+        .with_entities(TestResult.created_at)
+        .filter(
+            TestResult.school_id == school_id,
+            TestResult.created_at.isnot(None)
+        )
+        .all()
+    )
+    return sorted({fecha.year for (fecha,) in fechas}, reverse=True)
+
+
+def obtener_registros_exportacion(school_id, anio=None):
+    consulta = TestResult.query.filter(TestResult.school_id == school_id)
+
+    if anio is not None:
+        inicio = datetime(anio, 1, 1)
+        termino = datetime(anio + 1, 1, 1)
+        consulta = consulta.filter(
+            TestResult.created_at >= inicio,
+            TestResult.created_at < termino
+        )
+
+    return consulta.order_by(
+        TestResult.created_at.asc(),
+        TestResult.student_name.asc()
+    ).all()
+
+
+@colegio_bp.route("/exportar", methods=["GET", "POST"])
+def exportar():
+    if not colegio_login_required():
+        return redirect(url_for("colegio.login"))
+
+    school_id = session.get("colegio_school_id")
+    school_name = session.get("colegio_school_name") or "Colegio"
+    current_year = datetime.now().year
+    anios = obtener_anios_disponibles_colegio(school_id)
+
+    if current_year not in anios:
+        anios.insert(0, current_year)
+
+    if request.method == "GET":
+        return render_template(
+            "colegio/exportar.html",
+            school_name=school_name,
+            current_year=current_year,
+            anios=anios
+        )
+
+    periodo = request.form.get("periodo", "actual")
+    anio = None
+
+    if periodo == "actual":
+        anio = current_year
+        periodo_texto = f"Año {anio}"
+    elif periodo == "especifico":
+        try:
+            anio = int(request.form.get("anio", ""))
+        except ValueError:
+            flash("Seleccione un año válido.", "danger")
+            return redirect(url_for("colegio.exportar"))
+
+        if anio not in anios:
+            flash("El año seleccionado no está disponible.", "danger")
+            return redirect(url_for("colegio.exportar"))
+        periodo_texto = f"Año {anio}"
+    elif periodo == "historico":
+        periodo_texto = "Histórico completo"
+    else:
+        flash("Seleccione un periodo válido.", "danger")
+        return redirect(url_for("colegio.exportar"))
+
+    results = obtener_registros_exportacion(school_id, anio)
+
+    if not results:
+        flash("No existen evaluaciones para el periodo seleccionado.", "warning")
+        return redirect(url_for("colegio.exportar"))
+
+    archivo = crear_excel_institucional(results, school_name, periodo_texto)
+    nombre_colegio = (
+        re.sub(r"[^A-Za-z0-9_-]+", "_", school_name).strip("_")
+        or "Colegio"
+    )
+    periodo_archivo = "Historico" if anio is None else str(anio)
+    nombre_archivo = f"Resultados_{nombre_colegio}_{periodo_archivo}.xlsx"
+
+    return send_file(
+        archivo,
+        as_attachment=True,
+        download_name=nombre_archivo,
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
 
 
