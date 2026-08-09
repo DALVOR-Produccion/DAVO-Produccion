@@ -1,0 +1,275 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<style>
+.dashboard-header {
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    gap:15px;
+    flex-wrap:wrap;
+}
+.filtros-dashboard {
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));
+    gap:12px;
+    background:#f5f7fa;
+    padding:15px;
+    border-radius:10px;
+    margin:18px 0;
+}
+.filtros-dashboard label {
+    display:block;
+    font-weight:bold;
+    margin-bottom:5px;
+}
+.filtros-dashboard select {
+    width:100%;
+    box-sizing:border-box;
+}
+.tarjetas-dashboard {
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));
+    gap:14px;
+    margin:18px 0;
+}
+.tarjeta-indicador {
+    display:block;
+    background:#eef4ff;
+    border-left:5px solid #123c75;
+    border-radius:10px;
+    padding:16px;
+    color:#172b4d;
+    text-decoration:none;
+}
+.tarjeta-indicador:hover { background:#dfeaff; }
+.tarjeta-numero { font-size:30px; font-weight:bold; margin-top:6px; }
+.seccion-dashboard {
+    margin-top:25px;
+    padding-top:8px;
+    scroll-margin-top:15px;
+}
+.tabla-dashboard { width:100%; border-collapse:collapse; }
+.tabla-dashboard th { background:#123c75; color:white; padding:8px; }
+.tabla-dashboard td { border:1px solid #d0d5dd; padding:8px; text-align:center; }
+.barra-fila {
+    display:grid;
+    grid-template-columns:140px 1fr 95px;
+    gap:10px;
+    align-items:center;
+    margin:9px 0;
+}
+.barra-fondo { background:#e4e7ec; height:22px; border-radius:7px; overflow:hidden; }
+.barra-valor { background:#2474c6; height:100%; min-width:0; }
+.comparacion-niveles {
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(280px, 1fr));
+    gap:20px;
+}
+.mensaje-sin-datos {
+    background:#fff8e6;
+    border-left:5px solid #f4b400;
+    padding:14px;
+    border-radius:8px;
+}
+.acciones-dashboard { display:flex; gap:10px; flex-wrap:wrap; margin-top:20px; }
+@media print {
+    .no-imprimir, .acciones-dashboard { display:none !important; }
+    .card { box-shadow:none; max-width:none; }
+}
+@media (max-width:600px) {
+    .barra-fila { grid-template-columns:100px 1fr; }
+    .barra-fila strong:last-child { grid-column:2; }
+}
+</style>
+
+<div class="card">
+    <div class="dashboard-header">
+        <div>
+            <h2>Dashboard Institucional</h2>
+            <p><strong>Establecimiento:</strong> {{ school_name }}</p>
+            <p>{{ periodo_texto }}</p>
+        </div>
+        <div class="no-imprimir">
+            <button type="button" class="btn" onclick="window.print()">Imprimir dashboard</button>
+        </div>
+    </div>
+
+    <form method="GET" class="filtros-dashboard no-imprimir">
+        <div>
+            <label for="anio">Periodo</label>
+            <select id="anio" name="anio">
+                <option value="{{ current_year }}" {% if seleccion_anio == current_year|string %}selected{% endif %}>
+                    Año actual ({{ current_year }})
+                </option>
+                {% for anio in anios %}
+                    {% if anio != current_year %}
+                        <option value="{{ anio }}" {% if seleccion_anio == anio|string %}selected{% endif %}>{{ anio }}</option>
+                    {% endif %}
+                {% endfor %}
+                <option value="historico" {% if seleccion_anio == 'historico' %}selected{% endif %}>Histórico completo</option>
+            </select>
+        </div>
+        <div>
+            <label for="nivel">Tipo de enseñanza</label>
+            <select id="nivel" name="nivel">
+                <option value="basica" {% if nivel == 'basica' %}selected{% endif %}>Enseñanza Básica</option>
+                <option value="media" {% if nivel == 'media' %}selected{% endif %}>Enseñanza Media</option>
+                <option value="todos" {% if nivel == 'todos' %}selected{% endif %}>Enseñanza Básica y Media</option>
+            </select>
+        </div>
+        <div>
+            <label for="estado">Registros</label>
+            <select id="estado" name="estado">
+                <option value="activos" {% if estado == 'activos' %}selected{% endif %}>Solo activos</option>
+                <option value="todos" {% if estado == 'todos' %}selected{% endif %}>Activos y archivados</option>
+            </select>
+        </div>
+        <div style="align-self:end;">
+            <button type="submit" class="btn">Aplicar filtros</button>
+        </div>
+    </form>
+
+    <div class="tarjetas-dashboard">
+        <a class="tarjeta-indicador" href="#perfil">
+            Estudiantes evaluados
+            <div class="tarjeta-numero">{{ datos.total_estudiantes }}</div>
+        </a>
+        <a class="tarjeta-indicador" href="#cursos">
+            Evaluaciones realizadas
+            <div class="tarjeta-numero">{{ datos.total_evaluaciones }}</div>
+        </a>
+        {% if datos.tiene_basica %}
+        <a class="tarjeta-indicador" href="#niveles">
+            Enseñanza Básica
+            <div class="tarjeta-numero">{{ datos.total_basica }}</div>
+        </a>
+        {% endif %}
+        {% if datos.tiene_media %}
+        <a class="tarjeta-indicador" href="#niveles">
+            Enseñanza Media
+            <div class="tarjeta-numero">{{ datos.total_media }}</div>
+        </a>
+        {% endif %}
+        <a class="tarjeta-indicador" href="#perfil">
+            Área principal predominante
+            <div style="font-size:20px; font-weight:bold; margin-top:9px;">{{ datos.principal_predominante }}</div>
+        </a>
+    </div>
+
+    {% if datos.total_estudiantes == 0 %}
+        <div class="mensaje-sin-datos">
+            {% if nivel == 'basica' %}
+                Su colegio no tiene registros de Enseñanza Básica en nuestra base
+                para el periodo y estado seleccionados.
+            {% elif nivel == 'media' %}
+                Su colegio no tiene registros de Enseñanza Media en nuestra base
+                para el periodo y estado seleccionados.
+            {% else %}
+                Su colegio no tiene registros de Enseñanza Básica ni Enseñanza Media
+                en nuestra base para el periodo y estado seleccionados.
+            {% endif %}
+            {% if estado == 'activos' %}
+                Si existen evaluaciones archivadas, puede seleccionar “Activos y archivados”.
+            {% endif %}
+        </div>
+    {% else %}
+        <section id="perfil" class="seccion-dashboard">
+            <h3>Perfil de intereses del establecimiento</h3>
+            <div class="comparacion-niveles">
+                <div>
+                    <h4>Áreas principales</h4>
+                    {% for item in datos.principales %}
+                    <div class="barra-fila">
+                        <span>{{ item.area }}</span>
+                        <div class="barra-fondo"><div class="barra-valor" style="width:{{ item.porcentaje }}%;"></div></div>
+                        <strong>{{ item.cantidad }} ({{ item.porcentaje }}%)</strong>
+                    </div>
+                    {% endfor %}
+                </div>
+                <div>
+                    <h4>Áreas secundarias</h4>
+                    {% for item in datos.secundarias %}
+                    <div class="barra-fila">
+                        <span>{{ item.area }}</span>
+                        <div class="barra-fondo"><div class="barra-valor" style="width:{{ item.porcentaje }}%;"></div></div>
+                        <strong>{{ item.cantidad }} ({{ item.porcentaje }}%)</strong>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </section>
+
+        <section id="cursos" class="seccion-dashboard">
+            <h3>Resultados por curso y paralelo</h3>
+            <div style="overflow-x:auto;">
+                <table class="tabla-dashboard">
+                    <thead>
+                        <tr>
+                            <th>Curso / paralelo</th><th>Estudiantes</th>
+                            <th>Científica</th><th>Humanista</th><th>Artística</th><th>Técnica</th><th>Social</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {% for fila in datos.por_curso %}
+                        <tr>
+                            <td><strong>{{ fila.etiqueta }}</strong></td>
+                            <td>{{ fila.total }}</td>
+                            <td>{{ fila.principales['Científica'] }}</td>
+                            <td>{{ fila.principales['Humanista'] }}</td>
+                            <td>{{ fila.principales['Artística'] }}</td>
+                            <td>{{ fila.principales['Técnica'] }}</td>
+                            <td>{{ fila.principales['Social'] }}</td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <p><small>La tabla muestra el área principal del último resultado de cada estudiante en el periodo.</small></p>
+        </section>
+
+        <section id="niveles" class="seccion-dashboard">
+            {% if datos.tiene_basica and datos.tiene_media %}
+                <h3>Comparación entre Enseñanza Básica y Media</h3>
+            {% elif datos.tiene_basica %}
+                <h3>Resumen de Enseñanza Básica</h3>
+            {% elif datos.tiene_media %}
+                <h3>Resumen de Enseñanza Media</h3>
+            {% endif %}
+            <div class="comparacion-niveles">
+                {% if datos.tiene_basica %}
+                <div>
+                    <h4>Enseñanza Básica: {{ datos.total_basica }} estudiantes</h4>
+                    {% for item in datos.basica_principales %}
+                    <div class="barra-fila">
+                        <span>{{ item.area }}</span>
+                        <div class="barra-fondo"><div class="barra-valor" style="width:{{ item.porcentaje }}%;"></div></div>
+                        <strong>{{ item.porcentaje }}%</strong>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                {% if datos.tiene_media %}
+                <div>
+                    <h4>Enseñanza Media: {{ datos.total_media }} estudiantes</h4>
+                    {% for item in datos.media_principales %}
+                    <div class="barra-fila">
+                        <span>{{ item.area }}</span>
+                        <div class="barra-fondo"><div class="barra-valor" style="width:{{ item.porcentaje }}%;"></div></div>
+                        <strong>{{ item.porcentaje }}%</strong>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+        </section>
+    {% endif %}
+
+    <div class="acciones-dashboard no-imprimir">
+        <a href="{{ url_for('colegio.exportar') }}" class="btn">Descargar datos en Excel</a>
+        <a href="{{ url_for('colegio.dashboard') }}" class="btn btn-secondary">Volver al panel del colegio</a>
+    </div>
+</div>
+
+{% endblock %}

@@ -16,6 +16,10 @@ from models.test_result import TestResult
 from models.institutional_user import InstitutionalUser
 from sqlalchemy import case
 from services.institutional_excel import crear_excel_institucional
+from services.institutional_statistics import (
+    calcular_dashboard_institucional,
+    nivel_del_curso,
+)
 import re
 
 
@@ -301,6 +305,80 @@ def alumnos():
         "colegio/alumnos.html",
         results=results,
         school_name=session.get("colegio_school_name")
+    )
+
+
+def obtener_registros_dashboard(school_id, anio, incluir_archivados, nivel):
+    consulta = TestResult.query.filter(TestResult.school_id == school_id)
+
+    if anio is not None:
+        inicio = datetime(anio, 1, 1)
+        termino = datetime(anio + 1, 1, 1)
+        consulta = consulta.filter(
+            TestResult.created_at >= inicio,
+            TestResult.created_at < termino,
+        )
+
+    if not incluir_archivados:
+        consulta = consulta.filter(TestResult.status == "activo")
+
+    resultados = consulta.order_by(TestResult.created_at.asc()).all()
+
+    if nivel in {"basica", "media"}:
+        resultados = [
+            resultado for resultado in resultados
+            if nivel_del_curso(resultado.course) == nivel
+        ]
+
+    return resultados
+
+
+@colegio_bp.route("/estadisticas")
+def estadisticas():
+    if not colegio_login_required():
+        return redirect(url_for("colegio.login"))
+
+    school_id = session.get("colegio_school_id")
+    current_year = datetime.now().year
+    anios = obtener_anios_disponibles_colegio(school_id)
+    seleccion_anio = request.args.get("anio", str(current_year))
+    nivel = request.args.get("nivel", "todos")
+    estado = request.args.get("estado", "activos")
+
+    if nivel not in {"todos", "basica", "media"}:
+        nivel = "todos"
+    if estado not in {"activos", "todos"}:
+        estado = "activos"
+
+    if seleccion_anio == "historico":
+        anio = None
+        periodo_texto = "Histórico completo"
+    else:
+        try:
+            anio = int(seleccion_anio)
+        except ValueError:
+            anio = current_year
+            seleccion_anio = str(current_year)
+        periodo_texto = f"Año {anio}"
+
+    resultados = obtener_registros_dashboard(
+        school_id=school_id,
+        anio=anio,
+        incluir_archivados=estado == "todos",
+        nivel=nivel,
+    )
+    datos = calcular_dashboard_institucional(resultados)
+
+    return render_template(
+        "colegio/estadisticas.html",
+        school_name=session.get("colegio_school_name"),
+        current_year=current_year,
+        anios=anios,
+        seleccion_anio=seleccion_anio,
+        periodo_texto=periodo_texto,
+        nivel=nivel,
+        estado=estado,
+        datos=datos,
     )
 
 
