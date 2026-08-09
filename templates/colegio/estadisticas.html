@@ -209,6 +209,7 @@
                         <tr>
                             <th>Curso / paralelo</th><th>Estudiantes</th>
                             <th>Científica</th><th>Humanista</th><th>Artística</th><th>Técnica</th><th>Social</th>
+                            <th class="no-imprimir">Detalle</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -221,6 +222,16 @@
                             <td>{{ fila.principales['Artística'] }}</td>
                             <td>{{ fila.principales['Técnica'] }}</td>
                             <td>{{ fila.principales['Social'] }}</td>
+                            <td class="no-imprimir">
+                                <a class="btn" href="{{ url_for(
+                                    'colegio.estadisticas_curso',
+                                    curso=fila.curso,
+                                    paralelo=fila.paralelo,
+                                    anio=seleccion_anio,
+                                    nivel=nivel,
+                                    estado=estado
+                                ) }}">Ver ficha</a>
+                            </td>
                         </tr>
                     {% endfor %}
                     </tbody>
@@ -267,7 +278,7 @@
     {% endif %}
 
     <div class="acciones-dashboard no-imprimir">
-        <a href="{{ url_for('colegio.exportar') }}" class="btn">Descargar datos en Excel</a>
+        <a href="{{ url_for('colegio.exportar') }}" class="btn">Descargar Excel general del colegio</a>
         <a href="{{ url_for('colegio.dashboard') }}" class="btn btn-secondary">Volver al panel del colegio</a>
     </div>
 </div>

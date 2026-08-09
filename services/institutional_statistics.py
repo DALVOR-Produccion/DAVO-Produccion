@@ -129,3 +129,73 @@ def calcular_dashboard_institucional(resultados):
         "basica_principales": distribucion_areas(basica, "main_area"),
         "media_principales": distribucion_areas(media, "main_area"),
     }
+
+
+def _acciones_para_areas(areas):
+    acciones = {
+        "Científica": (
+            "Fortalecer experiencias de investigación, experimentación, ciencias, "
+            "tecnología y resolución de problemas."
+        ),
+        "Humanista": (
+            "Promover lectura, escritura, debate, análisis de actualidad, historia "
+            "y comprensión de fenómenos sociales."
+        ),
+        "Artística": (
+            "Ofrecer espacios de creación visual, música, expresión corporal, diseño "
+            "y participación en actividades culturales."
+        ),
+        "Técnica": (
+            "Incorporar talleres prácticos, tecnología, robótica, herramientas, "
+            "oficios y exploración de alternativas Técnico-Profesionales."
+        ),
+        "Social": (
+            "Desarrollar actividades de colaboración, liderazgo, servicio, tutoría, "
+            "comunicación y trabajo con la comunidad."
+        ),
+    }
+    return [acciones[area] for area in areas if area in acciones]
+
+
+def calcular_ficha_curso(resultados):
+    fotografia = ultimo_resultado_por_estudiante(resultados)
+    principales = distribucion_areas(fotografia, "main_area")
+    secundarias = distribucion_areas(fotografia, "secondary_area")
+    principal = area_predominante(principales)
+    secundaria = area_predominante(secundarias)
+
+    principales_maximas = []
+    if fotografia:
+        mayor = max(item["cantidad"] for item in principales)
+        principales_maximas = [
+            item["area"] for item in principales
+            if item["cantidad"] == mayor and mayor > 0
+        ]
+
+    if not fotografia:
+        interpretacion = "No existen resultados suficientes para interpretar este curso."
+    elif len(principales_maximas) > 1:
+        interpretacion = (
+            "El curso presenta un perfil de intereses diversificado, sin una única "
+            f"área claramente predominante. Las áreas con mayor presencia son {principal}. "
+            "Esto sugiere ofrecer oportunidades variadas de exploración y evitar una "
+            "interpretación única del grupo."
+        )
+    else:
+        interpretacion = (
+            f"En el curso se observa una mayor presencia relativa del área {principal}, "
+            f"acompañada por el área secundaria {secundaria}. Este resultado describe "
+            "tendencias grupales y debe utilizarse para planificar oportunidades de "
+            "exploración, sin asignar una orientación definitiva a sus estudiantes."
+        )
+
+    return {
+        "total_evaluaciones": len(resultados),
+        "total_estudiantes": len(fotografia),
+        "principales": principales,
+        "secundarias": secundarias,
+        "principal_predominante": principal,
+        "secundaria_predominante": secundaria,
+        "interpretacion": interpretacion,
+        "acciones": _acciones_para_areas(principales_maximas),
+    }

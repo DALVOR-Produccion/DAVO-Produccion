@@ -1,0 +1,195 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<style>
+.ficha-encabezado {
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    gap:15px;
+    flex-wrap:wrap;
+}
+.ficha-indicadores {
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(190px, 1fr));
+    gap:14px;
+    margin:20px 0;
+}
+.ficha-indicador {
+    background:#eef4ff;
+    border-left:5px solid #123c75;
+    border-radius:10px;
+    padding:16px;
+}
+.ficha-numero { font-size:29px; font-weight:bold; margin-top:7px; }
+.ficha-graficos {
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(310px, 1fr));
+    gap:24px;
+    margin-top:22px;
+}
+.grafico-panel {
+    border:1px solid #d0d5dd;
+    border-radius:10px;
+    padding:16px;
+}
+.barra-fila-curso {
+    display:grid;
+    grid-template-columns:125px 1fr 95px;
+    gap:9px;
+    align-items:center;
+    margin:11px 0;
+}
+.barra-fondo-curso { background:#e4e7ec; height:24px; border-radius:7px; overflow:hidden; }
+.barra-principal { background:#2474c6; height:100%; }
+.barra-secundaria { background:#5b9f61; height:100%; }
+.tabla-ficha { width:100%; border-collapse:collapse; margin-top:20px; }
+.tabla-ficha th { background:#123c75; color:white; padding:9px; }
+.tabla-ficha td { border:1px solid #d0d5dd; padding:9px; text-align:center; }
+.interpretacion {
+    background:#f5f7fa;
+    border-left:5px solid #667085;
+    border-radius:8px;
+    padding:16px;
+    line-height:1.55;
+    margin-top:22px;
+}
+.acciones-curso {
+    background:#eef8ef;
+    border-left:5px solid #3f8545;
+    border-radius:8px;
+    padding:16px;
+    margin-top:18px;
+}
+.botones-ficha { display:flex; gap:10px; flex-wrap:wrap; margin-top:22px; }
+@media print {
+    .no-imprimir, .botones-ficha { display:none !important; }
+    .card { box-shadow:none; max-width:none; }
+}
+@media (max-width:600px) {
+    .barra-fila-curso { grid-template-columns:100px 1fr; }
+    .barra-fila-curso strong:last-child { grid-column:2; }
+}
+</style>
+
+<div class="card">
+    <div class="ficha-encabezado">
+        <div>
+            <h2>Ficha Estadística del Curso</h2>
+            <p><strong>Establecimiento:</strong> {{ school_name }}</p>
+            <p><strong>Curso:</strong> {{ curso_completo }}</p>
+            <p><strong>Periodo:</strong> {{ periodo_texto }}</p>
+        </div>
+        <button type="button" class="btn no-imprimir" onclick="window.print()">
+            Imprimir ficha del curso
+        </button>
+    </div>
+
+    <div class="ficha-indicadores">
+        <div class="ficha-indicador">
+            Estudiantes únicos
+            <div class="ficha-numero">{{ datos.total_estudiantes }}</div>
+        </div>
+        <div class="ficha-indicador">
+            Evaluaciones realizadas
+            <div class="ficha-numero">{{ datos.total_evaluaciones }}</div>
+        </div>
+        <div class="ficha-indicador">
+            Área principal predominante
+            <div style="font-size:19px; font-weight:bold; margin-top:10px;">{{ datos.principal_predominante }}</div>
+        </div>
+        <div class="ficha-indicador">
+            Área secundaria predominante
+            <div style="font-size:19px; font-weight:bold; margin-top:10px;">{{ datos.secundaria_predominante }}</div>
+        </div>
+    </div>
+
+    <div class="ficha-graficos">
+        <div class="grafico-panel">
+            <h3>Áreas principales</h3>
+            {% for item in datos.principales %}
+            <div class="barra-fila-curso">
+                <span>{{ item.area }}</span>
+                <div class="barra-fondo-curso"><div class="barra-principal" style="width:{{ item.porcentaje }}%;"></div></div>
+                <strong>{{ item.cantidad }} ({{ item.porcentaje }}%)</strong>
+            </div>
+            {% endfor %}
+        </div>
+        <div class="grafico-panel">
+            <h3>Áreas secundarias</h3>
+            {% for item in datos.secundarias %}
+            <div class="barra-fila-curso">
+                <span>{{ item.area }}</span>
+                <div class="barra-fondo-curso"><div class="barra-secundaria" style="width:{{ item.porcentaje }}%;"></div></div>
+                <strong>{{ item.cantidad }} ({{ item.porcentaje }}%)</strong>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div style="overflow-x:auto;">
+        <table class="tabla-ficha">
+            <thead>
+                <tr><th>Área</th><th>Principal</th><th>% principal</th><th>Secundaria</th><th>% secundaria</th></tr>
+            </thead>
+            <tbody>
+            {% for principal in datos.principales %}
+                {% set secundaria = datos.secundarias[loop.index0] %}
+                <tr>
+                    <td><strong>{{ principal.area }}</strong></td>
+                    <td>{{ principal.cantidad }}</td>
+                    <td>{{ principal.porcentaje }}%</td>
+                    <td>{{ secundaria.cantidad }}</td>
+                    <td>{{ secundaria.porcentaje }}%</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="interpretacion">
+        <h3>Interpretación institucional</h3>
+        <p>{{ datos.interpretacion }}</p>
+    </div>
+
+    <div class="acciones-curso">
+        <h3>Acciones y talleres sugeridos</h3>
+        {% if datos.acciones %}
+            <ul>
+            {% for accion in datos.acciones %}
+                <li>{{ accion }}</li>
+            {% endfor %}
+            </ul>
+        {% else %}
+            <p>Se recomienda ampliar las oportunidades de exploración en las distintas áreas.</p>
+        {% endif %}
+        <p><small>Estas sugerencias apoyan la planificación del establecimiento y no reemplazan el análisis del orientador.</small></p>
+    </div>
+
+    <div class="botones-ficha no-imprimir">
+        <button type="button" class="btn" onclick="window.print()">Imprimir ficha del curso</button>
+        <a class="btn" href="{{ url_for(
+            'colegio.estadisticas_curso_excel',
+            curso=curso,
+            paralelo=paralelo,
+            anio=seleccion_anio,
+            estado=estado
+        ) }}">Descargar Excel de este curso</a>
+        <a class="btn" href="{{ url_for(
+            'colegio.estadisticas_curso_pdf',
+            curso=curso,
+            paralelo=paralelo,
+            anio=seleccion_anio,
+            estado=estado
+        ) }}">Descargar PDF de este curso</a>
+        <a class="btn btn-secondary" href="{{ url_for(
+            'colegio.estadisticas',
+            anio=seleccion_anio,
+            nivel=nivel,
+            estado=estado
+        ) }}">Volver al Dashboard Institucional</a>
+    </div>
+</div>
+
+{% endblock %}

@@ -16,8 +16,10 @@ from models.test_result import TestResult
 from models.institutional_user import InstitutionalUser
 from sqlalchemy import case
 from services.institutional_excel import crear_excel_institucional
+from services.institutional_course_exports import crear_excel_curso, crear_pdf_curso
 from services.institutional_statistics import (
     calcular_dashboard_institucional,
+    calcular_ficha_curso,
     nivel_del_curso,
 )
 import re
@@ -379,6 +381,173 @@ def estadisticas():
         nivel=nivel,
         estado=estado,
         datos=datos,
+    )
+
+
+@colegio_bp.route("/estadisticas/curso")
+def estadisticas_curso():
+    if not colegio_login_required():
+        return redirect(url_for("colegio.login"))
+
+    cursos_validos = {
+        "6° Básico", "7° Básico", "8° Básico",
+        "1° Medio", "2° Medio", "3° Medio", "4° Medio",
+    }
+    school_id = session.get("colegio_school_id")
+    current_year = datetime.now().year
+    curso = request.args.get("curso", "").strip()
+    paralelo = request.args.get("paralelo", "SIN PARALELO").strip() or "SIN PARALELO"
+    seleccion_anio = request.args.get("anio", str(current_year))
+    nivel = request.args.get("nivel", "todos")
+    estado = request.args.get("estado", "activos")
+
+    if curso not in cursos_validos:
+        flash("Seleccione un curso válido.", "warning")
+        return redirect(url_for("colegio.estadisticas"))
+    if nivel not in {"todos", "basica", "media"}:
+        nivel = "todos"
+    if estado not in {"activos", "todos"}:
+        estado = "activos"
+
+    if seleccion_anio == "historico":
+        anio = None
+        periodo_texto = "Histórico completo"
+    else:
+        try:
+            anio = int(seleccion_anio)
+        except ValueError:
+            anio = current_year
+            seleccion_anio = str(current_year)
+        periodo_texto = f"Año {anio}"
+
+    resultados = obtener_registros_dashboard(
+        school_id=school_id,
+        anio=anio,
+        incluir_archivados=estado == "todos",
+        nivel="todos",
+    )
+    resultados = [
+        resultado for resultado in resultados
+        if resultado.course == curso
+        and (resultado.section or "SIN PARALELO") == paralelo
+    ]
+
+    if not resultados:
+        flash("No existen resultados para el curso y los filtros seleccionados.", "warning")
+        return redirect(url_for(
+            "colegio.estadisticas",
+            anio=seleccion_anio,
+            nivel=nivel,
+            estado=estado,
+        ))
+
+    datos = calcular_ficha_curso(resultados)
+    curso_completo = curso if paralelo == "SIN PARALELO" else f"{curso} {paralelo}"
+
+    return render_template(
+        "colegio/estadisticas_curso.html",
+        school_name=session.get("colegio_school_name"),
+        curso=curso,
+        paralelo=paralelo,
+        curso_completo=curso_completo,
+        periodo_texto=periodo_texto,
+        seleccion_anio=seleccion_anio,
+        nivel=nivel,
+        estado=estado,
+        datos=datos,
+    )
+
+
+def _datos_exportacion_curso():
+    cursos_validos = {
+        "6° Básico", "7° Básico", "8° Básico",
+        "1° Medio", "2° Medio", "3° Medio", "4° Medio",
+    }
+    school_id = session.get("colegio_school_id")
+    current_year = datetime.now().year
+    curso = request.args.get("curso", "").strip()
+    paralelo = request.args.get("paralelo", "SIN PARALELO").strip() or "SIN PARALELO"
+    seleccion_anio = request.args.get("anio", str(current_year))
+    estado = request.args.get("estado", "activos")
+
+    if curso not in cursos_validos:
+        return None
+    if estado not in {"activos", "todos"}:
+        estado = "activos"
+
+    if seleccion_anio == "historico":
+        anio = None
+        periodo_texto = "Histórico completo"
+    else:
+        try:
+            anio = int(seleccion_anio)
+        except ValueError:
+            return None
+        periodo_texto = f"Año {anio}"
+
+    resultados = obtener_registros_dashboard(
+        school_id=school_id,
+        anio=anio,
+        incluir_archivados=estado == "todos",
+        nivel="todos",
+    )
+    resultados = [
+        resultado for resultado in resultados
+        if resultado.course == curso
+        and (resultado.section or "SIN PARALELO") == paralelo
+    ]
+    if not resultados:
+        return None
+
+    curso_completo = curso if paralelo == "SIN PARALELO" else f"{curso} {paralelo}"
+    return resultados, calcular_ficha_curso(resultados), curso, paralelo, curso_completo, periodo_texto
+
+
+@colegio_bp.route("/estadisticas/curso/excel")
+def estadisticas_curso_excel():
+    if not colegio_login_required():
+        return redirect(url_for("colegio.login"))
+
+    exportacion = _datos_exportacion_curso()
+    if exportacion is None:
+        flash("No existen resultados para generar el Excel del curso.", "warning")
+        return redirect(url_for("colegio.estadisticas"))
+
+    resultados, datos, curso, paralelo, curso_completo, periodo_texto = exportacion
+    school_name = session.get("colegio_school_name") or "Colegio"
+    archivo = crear_excel_curso(
+        resultados, datos, school_name, curso_completo, periodo_texto
+    )
+    nombre_base = re.sub(r"[^A-Za-z0-9_-]+", "_", curso_completo).strip("_") or "Curso"
+    periodo_archivo = request.args.get("anio", str(datetime.now().year))
+    return send_file(
+        archivo,
+        as_attachment=True,
+        download_name=f"Estadisticas_{nombre_base}_{periodo_archivo}.xlsx",
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )
+
+
+@colegio_bp.route("/estadisticas/curso/pdf")
+def estadisticas_curso_pdf():
+    if not colegio_login_required():
+        return redirect(url_for("colegio.login"))
+
+    exportacion = _datos_exportacion_curso()
+    if exportacion is None:
+        flash("No existen resultados para generar el PDF del curso.", "warning")
+        return redirect(url_for("colegio.estadisticas"))
+
+    resultados, datos, curso, paralelo, curso_completo, periodo_texto = exportacion
+    school_name = session.get("colegio_school_name") or "Colegio"
+    archivo = crear_pdf_curso(datos, school_name, curso_completo, periodo_texto)
+    nombre_base = re.sub(r"[^A-Za-z0-9_-]+", "_", curso_completo).strip("_") or "Curso"
+    periodo_archivo = request.args.get("anio", str(datetime.now().year))
+    return send_file(
+        archivo,
+        as_attachment=True,
+        download_name=f"Ficha_{nombre_base}_{periodo_archivo}.pdf",
+        mimetype="application/pdf",
     )
 
 
