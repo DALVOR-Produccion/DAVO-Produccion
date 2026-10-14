@@ -63,20 +63,21 @@ def crear_excel_curso(resultados, datos, school_name, curso_completo, periodo_te
             secundaria["cantidad"],
             secundaria["porcentaje"] / 100,
         ])
-    for fila in range(11, 16):
+    for fila in range(11, resumen.max_row + 1):
         resumen.cell(fila, 3).number_format = "0.0%"
         resumen.cell(fila, 5).number_format = "0.0%"
 
     resumen.append([])
-    resumen.append(["Interpretación institucional"])
-    resumen["A17"].font = Font(bold=True, color="123C75")
-    resumen.append([datos["interpretacion"]])
-    resumen.merge_cells("A18:E18")
-    resumen["A18"].alignment = Alignment(wrap_text=True, vertical="top")
-    resumen.row_dimensions[18].height = 62
+    resumen.append(['Interpretación institucional'])
+    resumen.cell(resumen.max_row, 1).font = Font(bold=True, color='123C75')
+    resumen.append([datos['interpretacion']])
+    row = resumen.max_row
+    resumen.merge_cells(start_row=row, start_column=1, end_row=row, end_column=5)
+    resumen.cell(row,1).alignment = Alignment(wrap_text=True, vertical='top')
+    resumen.row_dimensions[row].height = 80
     resumen.append([])
-    resumen.append(["Acciones y talleres sugeridos"])
-    resumen["A20"].font = Font(bold=True, color="123C75")
+    resumen.append(['Acciones y talleres sugeridos'])
+    resumen.cell(resumen.max_row,1).font = Font(bold=True, color='123C75')
     for accion in datos["acciones"]:
         resumen.append([f"• {accion}"])
         resumen.merge_cells(start_row=resumen.max_row, start_column=1, end_row=resumen.max_row, end_column=5)
@@ -108,14 +109,14 @@ def crear_excel_curso(resultados, datos, school_name, curso_completo, periodo_te
             resultado.education_type or "",
             resultado.tp_area or "",
             resultado.test_type or "",
-            resultado.main_area or "",
-            resultado.secondary_area or "",
+            resultado.observed_main_area or "",
+            resultado.observed_secondary_area or "",
             resultado.score_cientifica or 0,
             resultado.score_humanista or 0,
             resultado.score_artistica or 0,
             resultado.score_tecnica or 0,
             resultado.score_social or 0,
-            resultado.suggested_path or "",
+            resultado.observed_path or "",
             resultado.status or "activo",
         ])
 
@@ -215,7 +216,7 @@ def crear_pdf_curso(datos, school_name, curso_completo, periodo_texto):
     filas = [["Área", "Principal", "%", "Secundaria", "%"]]
     for principal, secundaria in zip(datos["principales"], datos["secundarias"]):
         filas.append([
-            principal["area"], str(principal["cantidad"]), f'{principal["porcentaje"]}%',
+            Paragraph(principal["area"], normal), str(principal["cantidad"]), f'{principal["porcentaje"]}%',
             str(secundaria["cantidad"]), f'{secundaria["porcentaje"]}%',
         ])
     tabla_areas = Table(filas, colWidths=[5.2 * cm, 2.8 * cm, 2.8 * cm, 2.8 * cm, 2.8 * cm])

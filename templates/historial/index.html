@@ -63,7 +63,7 @@
                         {{ alumno.section }}
                     {% endif %}
                 </td>
-                <td style="border:1px solid #ccc; padding:8px;">{{ alumno.main_area }}</td>
+                <td style="border:1px solid #ccc; padding:8px;">{{ alumno.observed_main_area }}</td>
                 <td style="border:1px solid #ccc; padding:8px; text-align:center;">
                     <a href="{{ url_for('historial.detalle', rut=alumno.student_rut) }}" class="btn">
                         Ver historial

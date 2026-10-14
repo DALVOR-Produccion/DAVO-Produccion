@@ -1,212 +1,38 @@
 {% extends 'base.html' %}
-
+{% block container_class %}institutional-wide{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{{ url_for('static', filename='institutional.css') }}">{% endblock %}
 {% block content %}
-
-<style>
-.tabla-colegio {
-    width: 100%;
-    border-collapse: collapse;
-}
-
-.tabla-colegio th {
-    background: #0d6efd;
-    color: white;
-    padding: 8px;
-}
-
-.tabla-colegio td {
-    border: 1px solid #ccc;
-    padding: 8px;
-    text-align: center;
-}
-
-.info-box {
-    background:#f5f5f5;
-    padding:15px;
-    border-radius:8px;
-}
-
-.acciones-panel {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 10px;
-}
-
-.acciones-panel .btn-secondary {
-    margin-left: 0;
-}
-
-@media (max-width: 600px) {
-    .acciones-panel .btn {
-        width: 100%;
-        box-sizing: border-box;
-        text-align: center;
-    }
-}
-</style>
-
-<div class="card">
-
-    <h2>Panel Institucional</h2>
-
-    <p><strong>Establecimiento:</strong> {{ school_name }}</p>
-
-    <p><strong>Usuario:</strong> {{ full_name }}</p>
-
-    <hr>
-
-    <div class="info-box">
-
-        <h3>Resumen general</h3>
-
-        <p>
-            <strong>Total de evaluaciones activas:</strong>
-            {{ total }}
-        </p>
-
-    </div>
-
-    <hr>
-
-    <h3>Distribución por curso y paralelo</h3>
-
-    <div style="width:100%; overflow-x:auto;">
-
-        <table class="tabla-colegio">
-
-            <tr>
-                <th>Curso / Paralelo</th>
-                <th>Total</th>
-                <th>Científica</th>
-                <th>Humanista</th>
-                <th>Artística</th>
-                <th>Técnica</th>
-                <th>Social</th>
-            </tr>
-
-            {% for curso_paralelo, datos in porcentaje_por_curso_paralelo.items() %}
-
-            <tr>
-
-                <td>
-                    <strong>{{ curso_paralelo }}</strong>
-                </td>
-
-                <td>
-                    {{ por_curso_paralelo[curso_paralelo]["total"] }}
-                </td>
-
-                <td>
-                    {{ datos["Científica"]["cantidad"] }}
-                    <br>
-                    <small>{{ datos["Científica"]["porcentaje"] }}%</small>
-                </td>
-
-                <td>
-                    {{ datos["Humanista"]["cantidad"] }}
-                    <br>
-                    <small>{{ datos["Humanista"]["porcentaje"] }}%</small>
-                </td>
-
-                <td>
-                    {{ datos["Artística"]["cantidad"] }}
-                    <br>
-                    <small>{{ datos["Artística"]["porcentaje"] }}%</small>
-                </td>
-
-                <td>
-                    {{ datos["Técnica"]["cantidad"] }}
-                    <br>
-                    <small>{{ datos["Técnica"]["porcentaje"] }}%</small>
-                </td>
-
-                <td>
-                    {{ datos["Social"]["cantidad"] }}
-                    <br>
-                    <small>{{ datos["Social"]["porcentaje"] }}%</small>
-                </td>
-
-            </tr>
-
-            {% endfor %}
-
-        </table>
-
-    </div>
-
-    <hr>
-
-    <h3>Registros por curso general</h3>
-
-    {% if cursos %}
-
-        <ul>
-
-            {% for curso, cantidad in cursos %}
-
-                <li>{{ curso }}: {{ cantidad }}</li>
-
-            {% endfor %}
-
-        </ul>
-
-    {% else %}
-
-        <p>No hay registros disponibles.</p>
-
-    {% endif %}
-
-    <hr>
-
-    <h3>Áreas predominantes generales</h3>
-
-    {% if areas %}
-
-        <ul>
-
-            {% for area, cantidad in areas %}
-
-                <li>{{ area }}: {{ cantidad }}</li>
-
-            {% endfor %}
-
-        </ul>
-
-    {% else %}
-
-        <p>No hay áreas registradas.</p>
-
-    {% endif %}
-
-    <hr>
-
-    <div class="acciones-panel">
-        <a href="{{ url_for('colegio.alumnos') }}" class="btn">
-            Ver alumnos
-        </a>
-
-        <a href="{{ url_for('colegio.exportar') }}" class="btn">
-            Descargar Excel general del colegio
-        </a>
-
-        <a href="{{ url_for('colegio.estadisticas') }}" class="btn">
-            Ver Dashboard Institucional
-        </a>
-
-        <a href="{{ url_for('talleres.index') }}" class="btn">
-            Talleres sugeridos
-        </a>
-
-        <a href="{{ url_for('historial.index') }}" class="btn">
-            Seguimiento Histórico DAVO
-        </a>
-
-        <a href="{{ url_for('colegio.logout') }}" class="btn btn-secondary">
-            Salir
-        </a>
-    </div>
-
+<div class="institutional">
+  <header class="page-head">
+    <div><div class="eyebrow">Panel del colegio · {{ current_year }}</div><h2>{{ school_name }}</h2><p class="muted">Bienvenido/a, {{ full_name }}. Resultados, seguimiento y talleres en un solo lugar.</p></div>
+    <a class="btn btn-secondary" href="{{ url_for('colegio.logout') }}">Cerrar sesión</a>
+  </header>
+  <div class="metrics">
+    <div class="metric"><strong>{{ total }}</strong><span>Alumnos vigentes evaluados</span></div>
+    <div class="metric"><strong>{{ evaluation_count }}</strong><span>Evaluaciones activas del año</span></div>
+    <div class="metric"><strong>{{ basic_count }}</strong><span>Alumnos de enseñanza básica</span></div>
+    <div class="metric"><strong>{{ secondary_count }}</strong><span>Alumnos de enseñanza media</span></div>
+  </div>
+  <p class="muted">Alumnos: última evaluación activa de cada estudiante, del año actual y perteneciente a este colegio. Evaluaciones: todas las aplicaciones activas del año en este colegio.</p>
+  <h3>¿Qué necesitas revisar?</h3>
+  <div class="tile-grid">
+    <section class="tile"><span class="eyebrow">01 · Resultados</span><h3>Alumnos e informes</h3><p>Busca estudiantes y consulta sus resultados e informes individuales.</p><a class="btn" href="{{ url_for('colegio.alumnos') }}">Ver alumnos</a></section>
+    <section class="tile"><span class="eyebrow">02 · Panorama del colegio</span><h3>Estadísticas</h3><p>Gráficos, áreas de interés y fichas por curso y paralelo. Selecciona año y enseñanza.</p><a class="btn" href="{{ url_for('colegio.estadisticas') }}">Explorar estadísticas</a></section>
+    <section class="tile"><span class="eyebrow">03 · Evolución</span><h3>Seguimiento histórico</h3><p>Revisa intereses que se mantienen o cambian entre evaluaciones.</p><a class="btn" href="{{ url_for('historial.index') }}">Ver seguimiento</a></section>
+    <section class="tile highlight"><span class="eyebrow">04 · Acompañamiento</span><h3>Talleres y ACLE</h3><p>Elige entre 84 fichas de básica. Filtra por curso y áreas de interés.</p><a class="btn" href="{{ url_for('catalog.index', level='basica') }}">Ver talleres</a></section>
+    <section class="tile"><span class="eyebrow">05 · Reportes</span><h3>Descargas e impresión</h3><p>Excel del año, de otro año o histórico. Las fichas de curso permiten imprimir y descargar PDF.</p><div class="actions"><a class="btn" href="{{ url_for('colegio.exportar') }}">Descargar Excel</a><a href="{{ url_for('colegio.estadisticas') }}">Fichas por curso</a></div></section>
+    <section class="tile"><span class="eyebrow">06 · Planificación</span><h3>Talleres seleccionados</h3><p>{{ active_workshops }} grupos con taller en desarrollo. Consulta material, avance y próxima habilitación.</p><a class="btn" href="{{ url_for('catalog.index') }}#seleccionados">Revisar talleres</a></section>
+  </div>
+  <div class="two-columns">
+    <section class="panel"><div class="group-heading"><h3>Cursos evaluados</h3><a href="{{ url_for('colegio.estadisticas') }}">Ver detalle</a></div>
+      {% if course_groups %}<div class="course-links">{% for group in course_groups %}<a href="{{ url_for('colegio.estadisticas_curso', curso=group.course, paralelo=group.section) }}">{{ group.label }} · {{ group.count }} alumnos</a>{% endfor %}</div>{% else %}<p class="muted">Aún no hay alumnos vigentes evaluados. El catálogo de talleres sigue disponible para consulta.</p>{% endif %}
+    </section>
+    <section class="panel"><h3>Intereses con mayor puntuación</h3>
+      {% for row in recommendations.rows %}{% if row.first or row.shared %}<div class="bar-row"><span>{{ row.area }}</span><div class="bar-track"><div class="bar-fill" style="width:{{ ((row.first + row.shared) * 100 / basic_count) if basic_count else 0 }}%"></div></div><strong>{{ row.first + row.shared }}</strong></div>{% endif %}{% endfor %}
+      {% if not basic_count %}<p class="muted">Aún no hay alumnos vigentes de básica para mostrar este resumen. Los intereses de media se consultan en Estadísticas.</p>{% endif %}
+      <p class="muted">Básica: cada área cuenta alumnos con esa puntuación máxima; los empates cuentan en ambas áreas, por lo que las cifras pueden superar el total de alumnos de básica. Las áreas cercanas no se cuentan como máximos.</p>
+      <a href="{{ url_for('catalog.index') }}">Explorar talleres por área</a>
+    </section>
+  </div>
 </div>
-
 {% endblock %}

@@ -2,6 +2,8 @@ import os
 from datetime import datetime
 
 from reportlab.lib.pagesizes import A4
+from reportlab.lib import colors
+from services.basic_results import COURSES
 from reportlab.lib.units import cm
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.enums import TA_CENTER
@@ -9,6 +11,7 @@ from reportlab.platypus import (
     SimpleDocTemplate,
     Paragraph,
     Spacer,
+    Table, TableStyle,
     HRFlowable
 )
 
@@ -257,7 +260,8 @@ def generar_pdf_informe(
         parent=styles["Heading2"],
         fontSize=12,
         leading=14,
-        spaceAfter=8
+        spaceAfter=8,
+        keepWithNext=True
     )
 
     normal_style = ParagraphStyle(
@@ -353,10 +357,13 @@ def generar_pdf_informe(
 
     story.append(
         Paragraph(
-            f"<b>Fecha:</b> {fecha_documento}",
+            f"<b>Fecha de emisión:</b> {fecha_documento}",
             normal_style
         )
     )
+
+    if result.created_at:
+        story.append(Paragraph('<b>Fecha registrada de evaluación:</b> ' + result.created_at.strftime('%d-%m-%Y'), normal_style))
 
     story.append(
         Spacer(
@@ -389,8 +396,8 @@ def generar_pdf_informe(
     story.append(
         Paragraph(
             (
-                "<b>Área principal observada:</b> "
-                f"{result.main_area}"
+                ("<b>Área de mayor interés observado:</b> " if result.course in COURSES else "<b>Área principal observada:</b> ")
+                + f"{result.observed_main_area}"
             ),
             normal_style
         )
@@ -400,18 +407,18 @@ def generar_pdf_informe(
         Paragraph(
             (
                 "<b>Área secundaria observada:</b> "
-                f"{result.secondary_area}"
+                f"{result.observed_secondary_area}"
             ),
             normal_style
         )
     )
 
-    if getattr(result, "suggested_path", None):
+    if result.observed_path:
         story.append(
             Paragraph(
                 (
                     "<b>Modalidad o ruta sugerida:</b> "
-                    f"{result.suggested_path}"
+                    f"{result.observed_path}"
                 ),
                 normal_style
             )
@@ -520,4 +527,4 @@ def generar_pdf_informe(
         ruta_pdf=ruta_pdf
     )
 
-    return ruta_pdf
+    return os.path.abspath(ruta_pdf)

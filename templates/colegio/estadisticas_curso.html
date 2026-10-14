@@ -168,6 +168,7 @@
     </div>
 
     <div class="botones-ficha no-imprimir">
+        <a class="btn" href="{{ url_for('catalog.index', course=curso, section=paralelo, level='basica' if 'Básico' in curso else 'media') }}">Elegir talleres para este curso</a>
         <button type="button" class="btn" onclick="window.print()">Imprimir ficha del curso</button>
         <a class="btn" href="{{ url_for(
             'colegio.estadisticas_curso_excel',

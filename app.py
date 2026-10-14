@@ -5,6 +5,7 @@ from config import Config
 from models import db
 from models.user import User
 from models.stored_report import StoredReport
+from models.workshop import WorkshopAccess, WorkshopSlot, WorkshopEnrollment
 from routes.auth import auth_bp, login_required
 from routes.students import students_bp
 from routes.test import test_bp
@@ -17,6 +18,7 @@ from routes.admin import admin_bp
 from routes.colegio import colegio_bp
 from routes.talleres import talleres_bp
 from routes.historial import historial_bp
+from routes.workshop_catalog import catalog_bp
 
 
 def create_default_admin():
@@ -39,6 +41,11 @@ def actualizar_columnas_section():
     Amplía las columnas section de las tablas students y test_results
     cuando todavía tienen una longitud menor a 20 caracteres.
     """
+
+    # SQLite no limita VARCHAR ni dispone de information_schema.
+    # Esta migración corresponde exclusivamente a PostgreSQL.
+    if db.engine.dialect.name != "postgresql":
+        return
 
     tablas = ["students", "test_results"]
 
@@ -115,6 +122,7 @@ def create_app():
     app.register_blueprint(colegio_bp)
     app.register_blueprint(talleres_bp)
     app.register_blueprint(historial_bp)
+    app.register_blueprint(catalog_bp)
 
     @app.route("/")
     def home():

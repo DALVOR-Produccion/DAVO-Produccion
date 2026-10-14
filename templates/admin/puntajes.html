@@ -1,0 +1,19 @@
+{% extends 'base.html' %}{% block content %}
+<div class="card"><h2>Puntajes por colegio y curso</h2>
+<p>Seleccione el colegio y luego el curso. Se muestra la última evaluación activa de cada estudiante dentro de ese colegio y curso, incluyendo sus paralelos.</p>
+<form method="get" style="display:flex;flex-wrap:wrap;gap:12px;align-items:end;margin:20px 0;">
+<label>Colegio<br><select name="school" onchange="this.form.course.value='';this.form.submit()" style="padding:10px;max-width:100%;"><option value="">Seleccione un colegio</option>{% for school in schools %}<option value="{{ school }}" {% if school==selected_school %}selected{% endif %}>{{ school }}</option>{% endfor %}</select></label>
+<label>Curso<br><select name="course" {% if not selected_school %}disabled{% endif %} style="padding:10px;"><option value="">Seleccione un curso</option>{% for course in courses %}<option value="{{ course }}" {% if course==selected_course %}selected{% endif %}>{{ course }}</option>{% endfor %}</select></label>
+<button class="btn" type="submit">Ver puntajes</button></form>
+{% if selected_school and selected_course %}
+<h3>{{ selected_school }} · {{ selected_course }}</h3>
+<p>{{ results|length }} estudiantes. Abra cada fila para revisar los puntajes y su lectura. Las fechas corresponden a la evaluación registrada.</p>
+{% for result in results %}<details style="margin:12px 0;border:1px solid #ccd5e0;border-radius:8px;padding:14px;">
+<summary style="cursor:pointer;"><strong>{{ result.student_name }}</strong> · {{ result.section or 'Sin paralelo' }} · {{ result.created_at.strftime('%d-%m-%Y') if result.created_at else 'Sin fecha' }} · {{ result.observed_main_area }}</summary>
+<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;margin-top:14px;"><thead><tr><th style="text-align:left;">Área de interés</th><th>Puntaje guardado</th><th>Máximo por área</th></tr></thead><tbody>{% for row in result.score_rows %}<tr><td style="padding:8px;border-bottom:1px solid #ddd;">{{ row.area }}</td><td style="text-align:center;">{{ row.points }}</td><td style="text-align:center;">{{ row.maximum if row.maximum is not none else 'Verificar versión' }}</td></tr>{% endfor %}</tbody></table></div>
+<p>{{ result.observed_main_area }}. {{ result.observed_secondary_area }}.</p>
+<p>Un punto por respuesta Sí en el test básico de 6.º a 8.º. El orden de áreas con igual puntaje no indica preferencia. Los puntajes de distintos cursos no se comparan directamente.</p>
+</details>{% else %}<p>No hay evaluaciones activas para esta selección.</p>{% endfor %}
+{% else %}<p>El cuadro se habilita al seleccionar un colegio y un curso.</p>{% endif %}
+<a class="btn" href="{{ url_for('admin.stats', school=selected_school, course=selected_course) }}">Volver a estadísticas</a>
+</div>{% endblock %}

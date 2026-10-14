@@ -69,11 +69,12 @@
 
     <h3>Resultados actuales</h3>
 
-    <p><strong>Área principal:</strong> {{ result.main_area }}</p>
+    
+<p><strong>Área de mayor interés observado:</strong> {{ result.observed_main_area }}</p>
 
-    <p><strong>Área secundaria:</strong> {{ result.secondary_area }}</p>
+    <p><strong>Área secundaria:</strong> {{ result.observed_secondary_area }}</p>
 
-    <p><strong>Modalidad sugerida:</strong> {{ result.suggested_path }}</p>
+    <p><strong>Modalidad sugerida:</strong> {{ result.observed_path }}</p>
 
     <hr>
 
@@ -96,12 +97,12 @@
 
     <p>
         <strong>Área principal anterior:</strong>
-        {{ previous_result.main_area }}
+        {{ previous_result.observed_main_area }}
     </p>
 
     <p>
         <strong>Área secundaria anterior:</strong>
-        {{ previous_result.secondary_area }}
+        {{ previous_result.observed_secondary_area }}
     </p>
 
     {% endif %}

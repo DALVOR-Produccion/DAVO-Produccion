@@ -208,7 +208,7 @@
                     <thead>
                         <tr>
                             <th>Curso / paralelo</th><th>Estudiantes</th>
-                            <th>Científica</th><th>Humanista</th><th>Artística</th><th>Técnica</th><th>Social</th>
+                            <th>Científica</th><th>Humanista</th><th>Artística</th><th>Técnica</th><th>Social</th><th>Sin área principal única</th>
                             <th class="no-imprimir">Detalle</th>
                         </tr>
                     </thead>
@@ -221,7 +221,7 @@
                             <td>{{ fila.principales['Humanista'] }}</td>
                             <td>{{ fila.principales['Artística'] }}</td>
                             <td>{{ fila.principales['Técnica'] }}</td>
-                            <td>{{ fila.principales['Social'] }}</td>
+                            <td>{{ fila.principales['Social'] }}</td><td>{{ fila.sin_principal_unica }}</td>
                             <td class="no-imprimir">
                                 <a class="btn" href="{{ url_for(
                                     'colegio.estadisticas_curso',

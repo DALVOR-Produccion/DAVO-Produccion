@@ -111,3 +111,23 @@ class TestResult(db.Model):
         db.DateTime,
         default=datetime.utcnow
     )
+
+    @property
+    def observed_main_area(self):
+        from services.basic_results import display_area
+        return display_area(self, 'main_area')
+
+    @property
+    def observed_secondary_area(self):
+        from services.basic_results import display_area
+        return display_area(self, 'secondary_area')
+
+    @property
+    def observed_path(self):
+        from services.basic_results import COURSES, continuity
+        return continuity(self)['modalidad'] if self.course == '8° Básico' else self.suggested_path
+
+    @property
+    def score_rows(self):
+        from services.basic_results import score_rows
+        return score_rows(self)

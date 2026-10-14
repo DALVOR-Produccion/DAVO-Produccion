@@ -1,3 +1,4 @@
+from services.basic_results import COURSES, history_text
 from collections import Counter
 
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash, send_file
@@ -12,7 +13,8 @@ from datetime import datetime
 
 from reportlab.lib.pagesizes import A4
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
-from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from xml.sax.saxutils import escape
 from reportlab.lib import colors
 
 
@@ -77,6 +79,10 @@ def obtener_tendencia_por_curso(curso):
 
 
 def obtener_analisis_historial(resultados):
+    if resultados and all(r.course in COURSES for r in resultados):
+        return dict(area_predominante='Ver evolución por evaluación',
+                    area_secundaria_predominante='Ver cada resultado',
+                    tendencia='Seguimiento exploratorio de intereses', texto=history_text(resultados))
     if not resultados:
         return {
             "area_predominante": "Sin datos",
@@ -99,15 +105,15 @@ def obtener_analisis_historial(resultados):
     )
 
     areas_principales = [
-        r.main_area
+        r.observed_main_area
         for r in resultados_ordenados
-        if r.main_area
+        if r.observed_main_area
     ]
 
     areas_secundarias = [
-        r.secondary_area
+        r.observed_secondary_area
         for r in resultados_ordenados
-        if r.secondary_area
+        if r.observed_secondary_area
     ]
 
     contador_principal = Counter(areas_principales)
@@ -127,8 +133,8 @@ def obtener_analisis_historial(resultados):
 
     total = len(resultados_ordenados)
     curso_actual = ultimo_curso.course or "Sin curso"
-    area_actual = ultimo_curso.main_area or "Sin área"
-    secundaria_actual = ultimo_curso.secondary_area or "Sin área secundaria"
+    area_actual = ultimo_curso.observed_main_area or "Sin área"
+    secundaria_actual = ultimo_curso.observed_secondary_area or "Sin área secundaria"
 
     hay_empate_principal = len(areas_principales_maximas) > 1
     hay_empate_secundaria = len(areas_secundarias_maximas) > 1
@@ -418,12 +424,14 @@ def generar_pdf_historial(rut):
             r.created_at.strftime("%d-%m-%Y") if r.created_at else "",
             curso,
             r.school or "",
-            r.main_area or "",
-            r.secondary_area or "",
-            r.suggested_path or "En observación"
+            r.observed_main_area or "",
+            r.observed_secondary_area or "",
+            r.observed_path or "En observación"
         ])
 
-    tabla = Table(data, repeatRows=1, colWidths=[35, 60, 60, 115, 80, 80, 95])
+    cell_style = ParagraphStyle('HistoryCell', parent=styles['Normal'], fontSize=7, leading=9)
+    wrapped_data = [[Paragraph(escape(str(cell)), cell_style) for cell in row] for row in data]
+    tabla = Table(wrapped_data, repeatRows=1, colWidths=[35, 60, 60, 115, 80, 80, 95])
     tabla.setStyle(TableStyle([
         ("BACKGROUND", (0, 0), (-1, 0), colors.lightgrey),
         ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
@@ -588,9 +596,9 @@ def exportar_excel_historial():
             "Año": r.created_at.strftime("%Y") if r.created_at else "",
             "Curso": curso,
             "Colegio donde realizó el test": r.school,
-            "Área principal": r.main_area,
-            "Área secundaria": r.secondary_area,
-            "Ruta sugerida": r.suggested_path or "En observación",
+            "Área principal": r.observed_main_area,
+            "Área secundaria": r.observed_secondary_area,
+            "Ruta sugerida": r.observed_path or "En observación",
             "Tipo de enseñanza": r.education_type or "",
         })
 

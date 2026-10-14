@@ -1,3 +1,4 @@
+from services.basic_results import category_area
 from collections import Counter, defaultdict
 from datetime import datetime
 
@@ -37,13 +38,16 @@ def ultimo_resultado_por_estudiante(resultados):
 
 def distribucion_areas(resultados, atributo):
     contador = Counter(
-        normalizar_area(getattr(resultado, atributo, None))
+        normalizar_area(category_area(resultado, atributo))
         for resultado in resultados
     )
     total = len(resultados)
     distribucion = []
 
-    for area in AREAS:
+    # Both series use the same labels, so tables cannot pair unrelated categories.
+    labels = {normalizar_area(category_area(result, attr))
+              for result in resultados for attr in ('main_area', 'secondary_area')}
+    for area in AREAS + sorted(labels - set(AREAS)):
         cantidad = contador.get(area, 0)
         porcentaje = round((cantidad / total) * 100, 1) if total else 0
         distribucion.append({
@@ -77,8 +81,8 @@ def resumen_por_curso(resultados):
         fila = filas[(curso, paralelo, etiqueta)]
         if resultado.student_rut:
             fila["ruts"].add(resultado.student_rut)
-        fila["principales"][normalizar_area(resultado.main_area)] += 1
-        fila["secundarias"][normalizar_area(resultado.secondary_area)] += 1
+        fila["principales"][normalizar_area(category_area(resultado, "main_area"))] += 1
+        fila["secundarias"][normalizar_area(category_area(resultado, "secondary_area"))] += 1
 
     orden = {
         "6° Básico": 1,
@@ -100,8 +104,9 @@ def resumen_por_curso(resultados):
             "paralelo": paralelo,
             "etiqueta": etiqueta,
             "total": len(datos["ruts"]),
-            "principales": {area: datos["principales"].get(area, 0) for area in AREAS},
-            "secundarias": {area: datos["secundarias"].get(area, 0) for area in AREAS},
+            "sin_principal_unica": sum(v for k,v in datos["principales"].items() if k not in AREAS),
+            "principales": {area: datos["principales"].get(area, 0) for area in AREAS + sorted((set(datos["principales"]) | set(datos["secundarias"])) - set(AREAS))},
+            "secundarias": {area: datos["secundarias"].get(area, 0) for area in AREAS + sorted((set(datos["principales"]) | set(datos["secundarias"])) - set(AREAS))},
         })
 
     return resultado
@@ -154,7 +159,7 @@ def _acciones_para_areas(areas):
             "comunicación y trabajo con la comunidad."
         ),
     }
-    return [acciones[area] for area in areas if area in acciones]
+    return [acciones.get(area, 'Ofrecer experiencias variadas sin asignar al estudiante a una única área; revisar sus intereses compartidos o cercanos.') for area in areas]
 
 
 def calcular_ficha_curso(resultados):
@@ -174,6 +179,9 @@ def calcular_ficha_curso(resultados):
 
     if not fotografia:
         interpretacion = "No existen resultados suficientes para interpretar este curso."
+    elif any(area not in AREAS for area in principales_maximas):
+        interpretacion = ('Entre las categorías más frecuentes hay resultados sin área principal única: '
+                          + principal + '. Esto no es una nueva área vocacional. Ofrecer exploración variada y revisar cada perfil.')
     elif len(principales_maximas) > 1:
         interpretacion = (
             "El curso presenta un perfil de intereses diversificado, sin una única "

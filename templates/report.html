@@ -81,8 +81,9 @@
 
     <h3>Resultados</h3>
 
-    <p><strong>Área principal observada:</strong> {{ result.main_area }}</p>
-    <p><strong>Área secundaria observada:</strong> {{ result.secondary_area }}</p>
+    
+<p><strong>Área de mayor interés observado:</strong> {{ result.observed_main_area }}</p>
+    <p><strong>Área secundaria observada:</strong> {{ result.observed_secondary_area }}</p>
 
     <p style="font-size:14px; color:#555;">
         Estos resultados representan intereses observados en esta etapa escolar.
@@ -110,12 +111,12 @@
 
     <p>
         <strong>Área principal anterior:</strong>
-        {{ previous_result.main_area }}
+        {{ previous_result.observed_main_area }}
     </p>
 
     <p>
         <strong>Área secundaria anterior:</strong>
-        {{ previous_result.secondary_area }}
+        {{ previous_result.observed_secondary_area }}
     </p>
 
     {% endif %}

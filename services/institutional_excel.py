@@ -1,3 +1,4 @@
+from services.basic_results import category_area
 from collections import defaultdict
 from io import BytesIO
 
@@ -76,14 +77,14 @@ def crear_excel_institucional(results, school_name, periodo_texto):
             resultado.education_type or "",
             resultado.tp_area or "",
             resultado.test_type or "",
-            resultado.main_area or "",
-            resultado.secondary_area or "",
+            resultado.observed_main_area or "",
+            resultado.observed_secondary_area or "",
             resultado.score_cientifica or 0,
             resultado.score_humanista or 0,
             resultado.score_artistica or 0,
             resultado.score_tecnica or 0,
             resultado.score_social or 0,
-            resultado.suggested_path or "",
+            resultado.observed_path or "",
             resultado.status or "activo",
         ])
 
@@ -99,9 +100,11 @@ def crear_excel_institucional(results, school_name, periodo_texto):
     ])
     resumen.append([])
 
+    areas = AREAS + sorted({_normalizar_area(category_area(result, attr))
+                            for result in results for attr in ('main_area', 'secondary_area')} - set(AREAS))
     encabezado_resumen = ["Curso", "Evaluaciones", "Estudiantes únicos"]
-    encabezado_resumen += [f"Principal: {area}" for area in AREAS]
-    encabezado_resumen += [f"Secundaria: {area}" for area in AREAS]
+    encabezado_resumen += [f"Principal: {area}" for area in areas]
+    encabezado_resumen += [f"Secundaria: {area}" for area in areas]
     resumen.append(encabezado_resumen)
     _estilizar_encabezado(resumen, 6)
 
@@ -118,8 +121,8 @@ def crear_excel_institucional(results, school_name, periodo_texto):
         datos["evaluaciones"] += 1
         if resultado.student_rut:
             datos["estudiantes"].add(resultado.student_rut)
-        datos["principales"][_normalizar_area(resultado.main_area)] += 1
-        datos["secundarias"][_normalizar_area(resultado.secondary_area)] += 1
+        datos["principales"][_normalizar_area(category_area(resultado, "main_area"))] += 1
+        datos["secundarias"][_normalizar_area(category_area(resultado, "secondary_area"))] += 1
 
     orden_cursos = {
         "6° Básico": 1,
@@ -134,8 +137,8 @@ def crear_excel_institucional(results, school_name, periodo_texto):
     for curso in sorted(datos_curso, key=lambda c: (orden_cursos.get(c, 99), c)):
         datos = datos_curso[curso]
         fila = [curso, datos["evaluaciones"], len(datos["estudiantes"])]
-        fila += [datos["principales"].get(area, 0) for area in AREAS]
-        fila += [datos["secundarias"].get(area, 0) for area in AREAS]
+        fila += [datos["principales"].get(area, 0) for area in areas]
+        fila += [datos["secundarias"].get(area, 0) for area in areas]
         resumen.append(fila)
 
     resumen.freeze_panes = "A7"

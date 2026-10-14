@@ -21,6 +21,13 @@ talleres_bp = Blueprint(
 )
 
 
+@talleres_bp.before_request
+def validar_acceso_colegio():
+    if session.get('colegio_logged'):
+        from routes.workshop_catalog import school_context
+        school_context()
+
+
 def acceso_permitido():
 
     if session.get("admin_logged"):
@@ -387,6 +394,8 @@ def aplicar_filtros_talleres():
         school_name_filter = selected_school
 
     registros_vigentes = obtener_registros_vigentes_talleres(school_name_filter)
+    if session.get('colegio_logged'):
+        registros_vigentes = [r for r in registros_vigentes if r.school_id == session.get('colegio_school_id')]
 
     results = filtrar_registros_talleres(
         registros_vigentes,
@@ -410,6 +419,9 @@ def aplicar_filtros_talleres():
 
 @talleres_bp.route("/")
 def index():
+
+    if session.get('colegio_logged'):
+        return redirect(url_for('catalog.index', **request.args.to_dict(flat=False)))
 
     if not acceso_permitido():
         return redirect(url_for("home"))

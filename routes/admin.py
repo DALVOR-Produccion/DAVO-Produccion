@@ -1,3 +1,5 @@
+from services.basic_results import profile, COURSES
+from services.basic_results import category_area
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash, send_file
 from io import BytesIO
 
@@ -231,7 +233,7 @@ def aplicar_filtros_estadisticas(
     if selected_area:
         resultados = [
             r for r in resultados
-            if r.main_area == selected_area
+            if selected_area in (profile(r)["considered"] if r.course in COURSES else [r.main_area])
         ]
 
     resultados = sorted(
@@ -271,7 +273,7 @@ def obtener_secciones_disponibles_desde_registros(registros, selected_course="")
 def calcular_estadisticas(results):
     total_registros = len(results)
 
-    areas_base = ["Científica", "Humanista", "Artística", "Técnica", "Social"]
+    areas_base = ["Científica", "Humanista", "Artística", "Técnica", "Social", "Intereses compartidos", "Puntuaciones cercanas", "Intereses distribuidos", "Sin predominio"]
 
     por_curso = {}
     por_curso_paralelo = {}
@@ -287,8 +289,8 @@ def calcular_estadisticas(results):
 
     for r in results:
         curso = r.course or "Sin curso"
-        area = r.main_area or "Sin área"
-        ruta = r.suggested_path or "Sin ruta"
+        area = category_area(r, "main_area")
+        ruta = r.observed_path or "Sin ruta"
         ensenanza = r.education_type or "No registrada"
         colegio = r.school or "Sin colegio"
         nivel = obtener_nivel_curso(curso)
@@ -1303,9 +1305,9 @@ def export_excel():
             "Colegio": r.school,
             "Curso": r.course,
             "Fecha": r.created_at.strftime('%d-%m-%Y'),
-            "Área Principal": r.main_area,
-            "Área Secundaria": r.secondary_area,
-            "Ruta Sugerida": r.suggested_path,
+            "Área Principal": r.observed_main_area,
+            "Área Secundaria": r.observed_secondary_area,
+            "Ruta Sugerida": r.observed_path,
             "Tipo Enseñanza": r.education_type
         })
 
@@ -1441,3 +1443,34 @@ def logout():
     session.pop("admin_logged", None)
 
     return redirect(url_for("home"))
+
+
+@admin_bp.route('/puntajes')
+def puntajes():
+    if not session.get('admin_logged'):
+        return redirect(url_for('admin.admin_login'))
+    school = request.args.get('school', '').strip()
+    course = request.args.get('course', '').strip()
+    schools = [row[0] for row in db.session.query(TestResult.school).filter(
+        TestResult.status == 'activo', TestResult.school.isnot(None), TestResult.school != '').distinct().order_by(TestResult.school).all()]
+    courses = []
+    results = []
+    if school in schools:
+        courses = [row[0] for row in db.session.query(TestResult.course).filter(
+            TestResult.school == school, TestResult.status == 'activo').distinct().all()]
+        courses.sort(key=curso_orden_valor)
+        if course in courses:
+            records = TestResult.query.filter_by(school=school, course=course, status='activo').order_by(
+                TestResult.created_at.desc(), TestResult.id.desc()).all()
+            seen = set()
+            for result in records:
+                key = result.student_rut or ('record', result.id)
+                if key not in seen:
+                    seen.add(key)
+                    results.append(result)
+            results.sort(key=lambda result: ((result.section or ''), (result.student_name or '')))
+    else:
+        school = ''
+        course = ''
+    return render_template('admin/puntajes.html', schools=schools, courses=courses,
+                           selected_school=school, selected_course=course, results=results)

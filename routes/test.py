@@ -1,4 +1,6 @@
+from services.basic_results import analyze_scores, profile, interpretation as basic_interpretation, workshops as basic_workshops, continuity, continuity_from_scores, history_text, SCORING_VERSION
 import json
+from services.basic_questionnaires import QUESTIONS_6, QUESTIONS_8, questions_for_course, instrument_version
 
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash, send_file
 
@@ -10,28 +12,7 @@ from services.pdf_generator import generar_pdf_informe
 test_bp = Blueprint("test", __name__, url_prefix="/test")
 
 
-questions = [
-    (1, "Me gusta ayudar a otras personas", "Social"),
-    (2, "Me gusta saber cómo funcionan las cosas", "Científica"),
-    (3, "Me gusta dibujar o pintar", "Artística"),
-    (4, "Me gusta armar o reparar objetos", "Técnica"),
-    (5, "Me gusta leer cuentos o historias", "Humanista"),
-    (6, "Me interesa hacer experimentos", "Científica"),
-    (7, "Me gusta la música, bailar o cantar", "Artística"),
-    (8, "Me gusta trabajar en grupo", "Social"),
-    (9, "Me interesa aprender sobre historia", "Humanista"),
-    (10, "Me interesa usar herramientas", "Técnica"),
-    (11, "Me gusta aprender sobre el cuerpo humano o la naturaleza", "Científica"),
-    (12, "Me gusta crear cosas nuevas", "Artística"),
-    (13, "Me gusta escuchar a otros", "Social"),
-    (14, "Me gusta escribir o contar ideas", "Humanista"),
-    (15, "Me gusta aprender haciendo cosas prácticas", "Técnica"),
-    (16, "Me gusta resolver problemas", "Científica"),
-    (17, "Me interesa participar en actividades artísticas", "Artística"),
-    (18, "Me interesa enseñar o explicar cosas", "Social"),
-    (19, "Me interesa conocer otras culturas", "Humanista"),
-    (20, "Me interesa la tecnología o los computadores", "Técnica"),
-]
+questions = QUESTIONS_6
 
 
 def obtener_talleres(area):
@@ -55,6 +36,7 @@ def obtener_resultados_basica(result):
     resultados = TestResult.query.filter(
         TestResult.student_rut == result.student_rut,
         TestResult.status == "activo",
+        TestResult.created_at <= result.created_at,
         TestResult.course.in_(cursos_basica)
     ).order_by(
         TestResult.created_at.asc()
@@ -64,92 +46,11 @@ def obtener_resultados_basica(result):
 
 
 def formatear_linea_historial(resultado):
-    fecha = resultado.created_at.strftime("%Y") if resultado.created_at else "Sin año"
-    curso = resultado.course or "Sin curso"
-    area = resultado.main_area or "Sin área"
-
-    return f"{fecha} - {curso}: área principal {area}."
+    return history_text([resultado]).split("\n\n")[0]
 
 
 def obtener_seguimiento(result):
-    resultados_basica = obtener_resultados_basica(result)
-
-    if result.course == "6° Básico":
-        return (
-            "Seguimiento de Enseñanza Básica:\n\n"
-            "Esta evaluación constituye una primera aproximación a los intereses "
-            "y preferencias del estudiante.\n\n"
-            "Los resultados obtenidos servirán como antecedente para futuras "
-            "evaluaciones de seguimiento durante la Enseñanza Básica."
-        )
-
-    if result.course == "7° Básico":
-
-        previos = [
-            r for r in resultados_basica
-            if r.id != result.id and r.course == "6° Básico"
-        ]
-
-        if not previos:
-            return (
-                "Seguimiento de Enseñanza Básica:\n\n"
-                "No existen evaluaciones previas registradas para este estudiante "
-                "en Enseñanza Básica.\n\n"
-                "Las conclusiones de este informe se basan exclusivamente en los "
-                "resultados obtenidos en la presente evaluación."
-            )
-
-        anterior = previos[-1]
-
-        lineas = [
-            formatear_linea_historial(anterior),
-            formatear_linea_historial(result)
-        ]
-
-        if anterior.main_area == result.main_area:
-            analisis = (
-                f"Los resultados muestran una tendencia consistente hacia el área "
-                f"{result.main_area} entre las evaluaciones registradas. "
-                "La estabilidad observada permite identificar intereses que comienzan "
-                "a consolidarse durante esta etapa escolar."
-            )
-        else:
-            analisis = (
-                f"Los resultados muestran una evolución de intereses desde el área "
-                f"{anterior.main_area} hacia el área {result.main_area}. "
-                "Esta situación es habitual durante el proceso de desarrollo vocacional "
-                "y refleja una etapa de exploración y descubrimiento de intereses."
-            )
-
-        return (
-            "Seguimiento de Enseñanza Básica:\n\n"
-            + "\n".join(lineas)
-            + "\n\n"
-            + analisis
-        )
-
-    previous_results = TestResult.query.filter(
-        TestResult.student_rut == result.student_rut,
-        TestResult.id != result.id
-    ).order_by(TestResult.created_at.asc()).all()
-
-    if not previous_results:
-        return ""
-
-    previous_result = previous_results[-1]
-
-    if result.main_area == previous_result.main_area:
-        return (
-            f"Al comparar con la evaluación anterior, se observa continuidad "
-            f"en el área {result.main_area}, lo que refleja estabilidad "
-            f"en los intereses observados."
-        )
-
-    return (
-        f"Se observa una evolución desde el área {previous_result.main_area} "
-        f"hacia el área {result.main_area}, lo que puede corresponder "
-        f"a un proceso natural de exploración de intereses."
-    )
+    return "Seguimiento de Enseñanza Básica:\n\n" + history_text(obtener_resultados_basica(result))
 
 
 
@@ -207,12 +108,7 @@ def obtener_textos_pdf_basico(result):
 def generar_respaldo_pdf_basico(result):
     introduccion, orientacion = obtener_textos_pdf_basico(result)
 
-    interpretacion = (
-        f"El estudiante presenta una tendencia principal hacia el área {result.main_area} "
-        f"y una inclinación secundaria hacia el área {result.secondary_area}. Estos resultados "
-        f"permiten observar intereses predominantes en esta etapa escolar y apoyar su desarrollo "
-        f"progresivo. No constituyen una decisión definitiva sobre su trayectoria educativa futura."
-    )
+    interpretacion = basic_interpretation(result)
 
     seguimiento = obtener_seguimiento(result) or None
 
@@ -239,7 +135,7 @@ def generar_respaldo_pdf_basico(result):
             "la continuidad educativa."
         )
 
-    talleres = obtener_talleres(result.main_area)
+    talleres = basic_workshops(result, obtener_talleres)
 
     try:
         generar_pdf_informe(
@@ -258,6 +154,11 @@ def generar_respaldo_pdf_basico(result):
 
 @test_bp.route("/start", methods=["GET", "POST"])
 def start_test():
+
+    course = session.get("course", "6° Básico")
+    if course not in ("6° Básico", "7° Básico"):
+        return redirect(url_for("students.new_student"))
+    questions = questions_for_course(course)
 
     if request.method == "POST":
 
@@ -289,10 +190,9 @@ def start_test():
             flash("Debe responder todas las preguntas antes de finalizar el test.", "danger")
             return render_template("test.html", questions=questions)
 
-        sorted_areas = sorted(scores.items(), key=lambda x: x[1], reverse=True)
-
-        main_area = sorted_areas[0][0]
-        secondary_area = sorted_areas[1][0]
+        analysis = analyze_scores(scores)
+        main_area = analysis["main"]
+        secondary_area = analysis["secondary"]
 
         result = TestResult(
             student_rut=session.get("student_rut"),
@@ -303,7 +203,7 @@ def start_test():
             course=session.get("course"),
             section=session.get("section"),
             test_type="Test Básico",
-            answers=json.dumps(answers),
+            answers=json.dumps({**answers, "_scoring_version": SCORING_VERSION, "_instrument_version": instrument_version(session.get("course", "6° Básico"))}),
             score_cientifica=scores["Científica"],
             score_humanista=scores["Humanista"],
             score_artistica=scores["Artística"],
@@ -340,6 +240,7 @@ def view_report(result_id):
             TestResult.student_rut == result.student_rut,
             TestResult.id != result.id,
             TestResult.status == "activo",
+        TestResult.created_at <= result.created_at,
             TestResult.course == "6° Básico"
         ).order_by(
             TestResult.created_at.asc()
@@ -355,17 +256,11 @@ def view_report(result_id):
     else:
         report_type = "inicial"
 
-    interpretation = (
-        f"El estudiante presenta una tendencia principal hacia el área "
-        f"{result.main_area} y una inclinación secundaria hacia el área "
-        f"{result.secondary_area}. Estos resultados permiten observar "
-        f"intereses predominantes en esta etapa escolar y apoyar su "
-        f"desarrollo progresivo."
-    )
+    interpretation = basic_interpretation(result)
 
     follow_up_text = obtener_seguimiento(result)
 
-    workshop_text = obtener_talleres(result.main_area)
+    workshop_text = basic_workshops(result, obtener_talleres)
 
     if result.course == "6° Básico":
         recommendation_text = (
@@ -409,12 +304,7 @@ def download_report_pdf(result_id):
 
     introduccion, orientacion = obtener_textos_pdf_basico(result)
 
-    interpretacion = (
-        f"El estudiante presenta una tendencia principal hacia el área {result.main_area} "
-        f"y una inclinación secundaria hacia el área {result.secondary_area}. Estos resultados "
-        f"permiten observar intereses predominantes en esta etapa escolar y apoyar su desarrollo "
-        f"progresivo. No constituyen una decisión definitiva sobre su trayectoria educativa futura."
-    )
+    interpretacion = basic_interpretation(result)
 
     seguimiento = obtener_seguimiento(result) or None
 
@@ -441,7 +331,7 @@ def download_report_pdf(result_id):
             "la continuidad educativa."
         )
 
-    talleres = obtener_talleres(result.main_area)
+    talleres = basic_workshops(result, obtener_talleres)
 
     ruta_pdf = generar_pdf_informe(
         result=result,

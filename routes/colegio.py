@@ -1,6 +1,8 @@
+from services.basic_results import category_area
 from datetime import datetime
 
 from flask import (
+    abort,
     Blueprint,
     flash,
     redirect,
@@ -26,6 +28,16 @@ import re
 
 
 colegio_bp = Blueprint("colegio", __name__, url_prefix="/colegio")
+
+
+@colegio_bp.before_request
+def validar_usuario_institucional():
+    if request.endpoint == 'colegio.login' or not session.get('colegio_logged'):
+        return
+    user = db.session.get(InstitutionalUser, session.get('colegio_user_id'))
+    if not user or not user.is_active or user.school_id != session.get('colegio_school_id'):
+        session.clear()
+        return redirect(url_for('colegio.login'))
 
 
 def colegio_login_required():
@@ -169,7 +181,7 @@ def obtener_resumen_areas_desde_registros(results):
     resumen = {}
 
     for r in results:
-        area = r.main_area or "Sin área"
+        area = category_area(r, "main_area")
         resumen[area] = resumen.get(area, 0) + 1
 
     return sorted(
@@ -179,14 +191,14 @@ def obtener_resumen_areas_desde_registros(results):
 
 
 def calcular_estadisticas_colegio(results):
-    areas_base = ["Científica", "Humanista", "Artística", "Técnica", "Social"]
+    areas_base = ["Científica", "Humanista", "Artística", "Técnica", "Social", "Intereses compartidos", "Puntuaciones cercanas", "Intereses distribuidos", "Sin predominio"]
 
     por_curso_paralelo = {}
 
     for r in results:
         curso = r.course or "Sin curso"
         section = r.section or "SIN PARALELO"
-        area = r.main_area or "Sin área"
+        area = category_area(r, "main_area")
 
         if section != "SIN PARALELO":
             curso_paralelo = f"{curso} {section}"
@@ -281,11 +293,36 @@ def dashboard():
 
     por_curso_paralelo, porcentaje_por_curso_paralelo = calcular_estadisticas_colegio(results)
 
+    from models.workshop import WorkshopSlot, WorkshopEnrollment
+    from services.workshop_catalog import group_recommendations, today_chile
+    current_year = datetime.now().year
+    evaluation_count = TestResult.query.filter(
+        TestResult.school_id == school_id, TestResult.status == 'activo',
+        TestResult.created_at >= datetime(current_year, 1, 1),
+        TestResult.created_at < datetime(current_year + 1, 1, 1),
+    ).count()
+    groups = {}
+    for result in results:
+        key = (result.course, result.section or 'SIN PARALELO')
+        groups[key] = groups.get(key, 0) + 1
+    course_groups = [dict(course=c, section=s, label=f'{c} {s}' if s != 'SIN PARALELO' else c, count=n)
+                     for (c, s), n in sorted(groups.items(), key=lambda item: (curso_orden_valor(item[0][0]), item[0][1]))]
+    active_workshops = db.session.query(WorkshopSlot).join(
+        WorkshopEnrollment, WorkshopSlot.current_enrollment_id == WorkshopEnrollment.id
+    ).filter(WorkshopSlot.school_id == school_id, WorkshopEnrollment.available_on > today_chile()).count()
+
     return render_template(
         "colegio/dashboard.html",
         school_name=session.get("colegio_school_name"),
         full_name=session.get("colegio_full_name"),
         total=total,
+        current_year=current_year,
+        evaluation_count=evaluation_count,
+        basic_count=sum(nivel_del_curso(r.course) == 'basica' for r in results),
+        secondary_count=sum(nivel_del_curso(r.course) == 'media' for r in results),
+        course_groups=course_groups,
+        active_workshops=active_workshops,
+        recommendations=group_recommendations([r for r in results if nivel_del_curso(r.course) == 'basica']),
         cursos=cursos,
         areas=areas,
         por_curso_paralelo=por_curso_paralelo,
